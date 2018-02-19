@@ -1,38 +1,39 @@
 
-# GlideinWMS Factory Installation
-
-## Before Starting
+GlideinWMS Factory Installation
+===================================
 
 This document describes how to install the Glidein Workflow Managment System Factory instance. 
-
-```
-   CONDORREL => 8.4.11
-   AS_OF_DATE => Feb 1, 2017
-```
 
 This document assumes expertise with Condor and familiarity with the glideinWMS software.  It **does not** cover anything but the simplest possible install.   Please consult the [Glidein WMS reference documentation](http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/install.html) for advanced topics, including non-root, non-RPM-based installation.
 
 This document covers three primary components of the Glidein WMS system:
-   * **WMS Collector / Schedd**: A set of *condor_collector* and *condor_schedd* processes that allow the submission of pilots to Grid entries.  
-   * **Glidein Factory**: The process submitting the pilots when needed
+ 
+ -  **WMS Collector / Schedd**: A set of `condor_collector` and `condor_schedd` processes that allow the submission of pilots to Grid entries.  
+ -  **Glidein Factory**: The process submitting the pilots when needed
 
 
 **`WARNING`** We really recommend you to use the OSG provided Factory and not to install your own. A [VO Frontend](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/) is sufficient to submit your jobs and to decide scheduling policies. And this will avoid for you the complexity to avoid directly with grid sites. If you really need you own factory be aware that it is a complex component and may require a non trivial maintenance effort.
 
+Before Starting
+---------------
+
+Before starting the installation process, consider the following points (consulting [the Reference section below](#reference) as needed):
 
 ## Requirements
 
 ### Host and OS
-   1 A host to install the **GlideinWMS** Factory (pristine node). 
-   1 OS is *SUPPORTED_OS**.  Currently most of our testing has been done on Scientific Linux 6.
-   1 Root access
+
+   - A host to install the **GlideinWMS** Factory (pristine node). 
+   - OS is *SUPPORTED_OS*.  Currently most of our testing has been done on Scientific Linux 6.
+   - Root access
 
 The Glidein WMS VO Factory has the following requirements:
-   * *CPU*: 4-8 for a large installation (1 should suffice on a small install)
-   * *RAM*: 4-8GB on a large installation (1GB should suffice for small installs)
-   * *Disk*:  10GB will be plenty sufficient for all the binaries, config and log files related to glideinWMS.  If you are a large site with need to keep significant history and logs, you may want to allocate 100GB+ to store long histories.
+   -   **CPU**: 4-8 for a large installation (1 should suffice on a small install)
+   -   **RAM**: 4-8GB on a large installation (1GB should suffice for small installs)
+   -   **Disk**:  10GB will be plenty sufficient for all the binaries, config and log files related to glideinWMS.  If you are a large site with need to keep significant history and logs, you may want to allocate 100GB+ to store long histories.
 
 ### Users
+
 The Glidein WMS Factory installation will create the following users unless they are already created.
 
 | User | Default uid | Comment |
@@ -40,89 +41,105 @@ The Glidein WMS Factory installation will create the following users unless they
 | condor | none | Condor user (installed via dependencies). |
 | gfactory | none | This user runs the Glidein VO factory. |
 
-Note that, to allow condor to use the condor root switchboard, if you use a different user (or *gfactory* has a different group than *gfactory*), then you will have to modify:
+Note that, to allow condor to use the condor root switchboard, if you use a different user (or `gfactory` has a different group than `gfactory`), then you will have to modify:
 
-```
+```console
 /etc/condor/privsep_config
 ```
 
-
 To verify that the user *gfactory* has *gfactory* as primary group check the output of 
 
-```
+```console
 getent passwd gfactory | cut -d: -f4 | xargs getent group
 ```
 
-It should be the *gfactory* group. 
+It should be the `gfactory` group. 
 
 ### Certificates 
 
 | Certificate | User that owns certificate | Path to certificate |
 | :---------: | :------------------------: | :-----------------: |
-| Host certificate | root | /etc/grid-security/hostcert.pem , /etc/grid-security/hostkey.pem|
+| Host certificate | root | /etc/grid-security/hostcert.pem  /etc/grid-security/hostkey.pem|
 
-[Here](https://opensciencegrid.github.io/docs/security/host-certs/)are instructions to request a host certificate.
+[Here](/security/host-certs.md) are instructions to request a host certificate.
+
  
 The host certificate/key is used for authorization,  however, authorization between the factory and the wms collector is done by file system authentication.
 
 
 ### Networking
-%STARTSECTION{"Firewalls"}%
-%INCLUDE{"FirewallInformation" section="FirewallTable" lines="http,condorcollector"}%
+
+#### Firewalls
 
 It must be on the public internet, with at least one port open to the world; all worker nodes will load data from this node trough HTTP. Note that worker nodes will also need outbound access in order to access this HTTP port. 
 
-%ENDSECTION{"Firewalls"}%
+Installation Procedure
+----------------------
 
+As with all OSG software installations, there are some one-time (per host) steps to prepare in advance:
 
+- Ensure the host has a [supported operating system](/release/supported_platforms)
+- Obtain root access to the host
+- Prepare the [required Yum repositories](/common/yum)
+- Install [CA certificates](/common/ca)
 
----+ Installation Procedure
+### Installing HTCondor
 
-%INCLUDE{"YumRepositories" section="OSGRepoBrief" TOC_SHIFT="+"}%
-
-%INCLUDE{"InstallCertAuth" section="OSGBriefCaCerts" TOC_SHIFT="+"}%
-
----++ Install HTCondor
 Most required software is installed from the Factory RPM installation. HTCondor is the only exception since there are [[CondorInformation][many different ways to install it]], using the RPM system or not. 
 You need to have HTCondor installed before installing the Glidein WMS Factory. If yum cannot find a HTCondor RPM, it will install the dummy =empty-condor= RPM, assuming that you installed HTCondor using a tarball distribution.
 
-If you don't have HTCondor already installed, you can install the HTCondor RPM in the OSG repository:
-<pre class="rootscreen">%UCL_PROMPT_ROOT% yum install condor.x86_64
-# If you have a 32 bit host use instead:
-%UCL_PROMPT_ROOT% yum install condor.i386</pre>
+If you don't have HTCondor already installed, you can install the HTCondor RPM
+from the OSG repository:
+
+``` console
+root@host # yum install condor.x86_64
+```
+
+If you have a 32 bit host use instead:
+
+``` console
+root@host # yum install condor.i386
+```
 
 See [[CondorInformation][this HTCondor document]] for more information on the different options.
 
----+++ Install HTCondor-BOSCO
-If you plan to send jobs using [[http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/recipes/batch.html][direct batch submission]] (aka BOSCO), then you need also the =condor-bosco= package. You'll have to install the package and remove one of its file (=/etc/condor/config.d/60-campus_factory.config=) because it interferes with the factory configuration.
-<pre class="rootscreen">%UCL_PROMPT_ROOT% yum install condor-bosco
-%UCL_PROMPT_ROOT% rm /etc/condor/config.d/60-campus_factory.config
-%UCL_PROMPT_ROOT% touch /etc/condor/config.d/60-campus_factory.config</pre>
+### Installing HTCondor-BOSCO
 
-There is an [[Trash/Trash/CampusGrids.BoscoInstall#8_Advanced_use][Advanced configuration section]] in the BOSCO documentation that can be useful to know, specially how to deal with [[Trash/Trash/CampusGrids.BoscoInstall#8_2_Multi_homed_hosts][multi homed BOSCO resources]]
-and the [[Trash/Trash/CampusGrids.BoscoInstall#8_4_Custom_submit_properties][specification of custom submit properties]].
+If you plan to send jobs using [direct batch submission](http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/recipes/batch.html) (aka BOSCO), then you need also the **condor-bosco** package. You'll have to install the package and remove one of its file (*/etc/condor/config.d/60-campus_factory.config*) because it interferes with the factory configuration.
 
-%STARTSECTION{"InstallGWMSFactory"}%
----++ Download and install the Factory RPM
+``` console
+root@host # yum install condor-bosco
+root@host # rm /etc/condor/config.d/60-campus_factory.config
+root@host # touch /etc/condor/config.d/60-campus_factory.config
+```
+
+There is an [Advanced configuration section] (Trash/Trash/CampusGrids.BoscoInstall#8_Advanced_use) in the BOSCO documentation that can be useful to know, specially how to deal with [multi homed BOSCO resources](Trash/Trash/CampusGrids.BoscoInstall#8_2_Multi_homed_hosts)
+and the [specification of custom submit properties](Trash/Trash/CampusGrids.BoscoInstall#8_4_Custom_submit_properties).
+
+Install GWMS Factory
+--------------------
+
+### Download and install the Factory RPM
 
 The RPM is available in the OSG repository:
 
 Install the RPM and dependencies (be prepared for a lot of dependencies).
 
-   <pre class="rootscreen">%UCL_PROMPT_ROOT% yum install glideinwms-factory</pre>
+``` console
+root@host # yum install glideinwms-factory
+```   
 
 This will install the current production release verified and tested by OSG with default condor configuration.
 This command will install the glideinwms factory, condor, the OSG client, and all the required dependencies.
-If you wish to install a different version of !GlideinWMS, add the "--enablerepo" argument to the command as follows:
 
-   * =yum install --enablerepo=osg-testing glideinwms-factory=: The most recent production release, still in testing phase.  This will usually match the current tarball version on the !GlideinWMS home page.  (The osg-release production version may lag behind the tarball release by a few weeks as it is verified and packaged by OSG).  Note that this will also take the osg-testing versions of all dependencies as well.
-   * =yum install --enablerepo=osg-contrib glideinwms-factory=:  The most recent development series release, ie version 3 release.  This has newer features such as cloud submission support, but is less tested.
+If you wish to install a different version of GlideinWMS, add the "--enablerepo" argument to the command as follows:
 
-
-%ENDSECTION{"InstallGWMSFactory"}%
+-   `yum install --enablerepo=osg-testing glideinwms-factory`: The most recent production release, still in testing phase.  This will usually match the current tarball version on the !GlideinWMS home page.  (The osg-release production version may lag behind the tarball release by a few weeks as it is verified and packaged by OSG).  Note that this will also take the osg-testing versions of all dependencies as well.
+-   `yum install --enablerepo=osg-contrib glideinwms-factory`:  The most recent development series release, ie version 3 release.  This has newer features such as cloud submission support, but is less tested.
 
 
----+ Configuration Procedure 
+Configuration Procedure 
+-----------------------
 
 After installing the RPM you need to configure the components of the Glidein WMS Factory:
    1. Edit Factory configuration options
@@ -130,20 +147,22 @@ After installing the RPM you need to configure the components of the Glidein WMS
    1. Create a Condor grid map file
    1. Reconfigure and Start factory
 
----++ Download condor tarballs
+### Download condor tarballs
 
 You will need to download Condor tarballs for each architecture that you want to deploy pilots on.
 At this point, glideinWMS factory does not support pulling condor binaries from your system area.
-Suggested is that you put these binaries in =/var/lib/gwms-factory/condor= but any =gfactory= accessible location should suffice.
+Suggested is that you put these binaries in **/var/lib/gwms-factory/condor** but any **gfactory** accessible location should suffice.
 
----++ Configuring the Factory
+### Configuring the Factory
 
 The configuration file is =/etc/gwms-factory/glideinWMS.xml=.  The next steps will describe each line that you will need to edit for most cases, but you may want to 
 review the whole file to be sure that it is configured correctly.
 
----+++ Frontend security configuration
+#### Frontend security configuration
 
 In the security section, you will need to provide each frontend that is allowed to communicate with the factory:
+
+  :::xml
    <pre class="file">
    &lt;security allow_proxy="frontend" key_length="2048" pub_key="RSA" reuse_oldkey_onstartup_gracetime="900"&gt;
       &lt;frontends&gt;
@@ -157,26 +176,34 @@ In the security section, you will need to provide each frontend that is allowed 
    </pre>
 
 These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the _factory_ and _security_ sections of the [[InstallGlideinWMSFrontend#Configuring_the_Frontend][frontend configuration]] in the following way:
-<pre class="file">%RED%This is a snippet from the Frontend configuration (for reference), not the Factory that you are configuring now!%ENDCOLOR%
-&lt;factory query_expr='((stringListMember("%PINK%VO%ENDCOLOR%", GLIDEIN_Supported_VOs)))'>
+
+  :::xml
+  # This is a snippet from the Frontend configuration (for reference), not the Factory that you are configuring now!
+        <factory query_expr='((stringListMember("VO", GLIDEIN_Supported_VOs)))'>
   ...
-  &lt;collectors>
-     &lt;collector DN="/DC=com/DC=DigiCert-Grid/O=Open Science Grid/OU=Services/CN=FACTORY_COLLECTOR_HOSTNAME" 
+  :::xml
+   <collectors>
+        <collector DN="/DC=com/DC=DigiCert-Grid/O=Open Science Grid/OU=Services/CN=FACTORY_COLLECTOR_HOSTNAME" 
           comment="Define factory collector globally for simplicity" factory_identity="gfactory@FACTORY_COLLECTOR_HOSTNAME" 
           my_identity="%GREEN%vofrontend_service%ENDCOLOR%@FACTORY_COLLECTOR_HOSTNAME" 
           node="FACTORY_COLLECTOR_HOSTNAME"/>
-     &lt;/collectors>
-&lt;/factory>
+   </collectors>
+  </factory>
 
-   &lt; security classad_proxy="/tmp/vo_proxy" proxy_DN="%BLUE%/DC=org/DC=doegrids/OU=People/CN=Some Name 123456%ENDCOLOR%" 
-      proxy_selection_plugin="ProxyAll" security_name="%ORANGE%vofrontend_sec_name%ENDCOLOR%" sym_key="aes_256_cbc"&gt;
-      &lt;proxies&gt;
-         &lt;proxy absfname="/tmp/pilot_proxy" security_class="%RED%frontend_sec_class%ENDCOLOR%"/&gt;
-      &lt;/proxies&gt;
-   &lt;/security &gt;
-</pre>
-Note that the identity of the frontend must match what *condor* authenticates the DN of the frontend to.  In =/etc/condor/certs/condor_mapfile=
+  <security classad_proxy="/tmp/vo_proxy" proxy_DN="DN of vo_proxy"
+        proxy_selection_plugin="ProxyAll"
+        security_name="The security name, this is used by factory"
+        sym_key="aes_256_cbc">
+        <credentials>
+          <credential absfname="/tmp/pilot_proxy" security_class="frontend"
+          trust_domain="OSG" type="grid_proxy"/>
+        </credentials>
+   </security>
+            
+Note that the identity of the frontend must match what *condor* authenticates the DN of the frontend to.  In `/etc/condor/certs/condor_mapfile`
 (See next section for more details), there must be an entry:
+
+  :::xml
 <pre class="file">
 GSI "%BLUE%^\/DC\=org\/DC\=doegrids\/OU\=People\/CN\=Some\ Name\ 834323%ENDCOLOR%$" %GREEN%vofrontend_service%ENDCOLOR%
 </pre>

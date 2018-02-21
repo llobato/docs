@@ -12,16 +12,17 @@ This document covers three primary components of the Glidein WMS system:
  -  **Glidein Factory**: The process submitting the pilots when needed
 
 
-**`WARNING`** We really recommend you to use the OSG provided Factory and not to install your own. A [VO Frontend](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/) is sufficient to submit your jobs and to decide scheduling policies. And this will avoid for you the complexity to avoid directly with grid sites. If you really need you own factory be aware that it is a complex component and may require a non trivial maintenance effort.
+!!! warning
+    We really recommend you to use the OSG provided Factory and not to install your own. A [VO Frontend](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/) is sufficient to submit your jobs and to decide scheduling policies. And this will avoid for you the complexity to avoid directly with grid sites. If you really need you own factory be aware that it is a complex component and may require a non trivial maintenance effort.
 
 Before Starting
 ---------------
 
 Before starting the installation process, consider the following points (consulting [the Reference section below](#reference) as needed):
 
-## Requirements
+### Requirements
 
-### Host and OS
+#### Host and OS
 
    - A host to install the **GlideinWMS** Factory (pristine node). 
    - OS is *SUPPORTED_OS*.  Currently most of our testing has been done on Scientific Linux 6.
@@ -32,7 +33,7 @@ The Glidein WMS VO Factory has the following requirements:
    -   **RAM**: 4-8GB on a large installation (1GB should suffice for small installs)
    -   **Disk**:  10GB will be plenty sufficient for all the binaries, config and log files related to glideinWMS.  If you are a large site with need to keep significant history and logs, you may want to allocate 100GB+ to store long histories.
 
-### Users
+#### Users
 
 The Glidein WMS Factory installation will create the following users unless they are already created.
 
@@ -55,7 +56,7 @@ getent passwd gfactory | cut -d: -f4 | xargs getent group
 
 It should be the `gfactory` group. 
 
-### Certificates 
+#### Certificates 
 
 | Certificate | User that owns certificate | Path to certificate |
 | :---------: | :------------------------: | :-----------------: |
@@ -67,9 +68,9 @@ It should be the `gfactory` group.
 The host certificate/key is used for authorization,  however, authorization between the factory and the wms collector is done by file system authentication.
 
 
-### Networking
+#### Networking
 
-#### Firewalls
+##### Firewalls
 
 It must be on the public internet, with at least one port open to the world; all worker nodes will load data from this node trough HTTP. Note that worker nodes will also need outbound access in order to access this HTTP port. 
 
@@ -116,10 +117,10 @@ root@host # touch /etc/condor/config.d/60-campus_factory.config
 There is an [Advanced configuration section] (Trash/Trash/CampusGrids.BoscoInstall#8_Advanced_use) in the BOSCO documentation that can be useful to know, specially how to deal with [multi homed BOSCO resources](Trash/Trash/CampusGrids.BoscoInstall#8_2_Multi_homed_hosts)
 and the [specification of custom submit properties](Trash/Trash/CampusGrids.BoscoInstall#8_4_Custom_submit_properties).
 
-Install GWMS Factory
---------------------
+### Install GWMS Factory
 
-### Download and install the Factory RPM
+
+#### Download and install the Factory RPM
 
 The RPM is available in the OSG repository:
 
@@ -147,69 +148,79 @@ After installing the RPM you need to configure the components of the Glidein WMS
    1. Create a Condor grid map file
    1. Reconfigure and Start factory
 
-### Download condor tarballs
+#### Download condor tarballs
 
 You will need to download Condor tarballs for each architecture that you want to deploy pilots on.
 At this point, glideinWMS factory does not support pulling condor binaries from your system area.
 Suggested is that you put these binaries in **/var/lib/gwms-factory/condor** but any **gfactory** accessible location should suffice.
 
-### Configuring the Factory
+#### Configuring the Factory
 
 The configuration file is =/etc/gwms-factory/glideinWMS.xml=.  The next steps will describe each line that you will need to edit for most cases, but you may want to 
 review the whole file to be sure that it is configured correctly.
 
-#### Frontend security configuration
+##### Frontend security configuration
 
 In the security section, you will need to provide each frontend that is allowed to communicate with the factory:
 
-  :::xml
-   <pre class="file">
-   &lt;security allow_proxy="frontend" key_length="2048" pub_key="RSA" reuse_oldkey_onstartup_gracetime="900"&gt;
-      &lt;frontends&gt;
-         &lt;frontend name="%ORANGE%vofrontend_sec_name%ENDCOLOR%" identity="%GREEN%vofrontend_service%ENDCOLOR%@FACTORY_COLLECTOR_HOSTNAME"&gt;
-            &lt;security_classes&gt;
-               &lt;security_class name="%RED%frontend_sec_class%ENDCOLOR%" username="frontend"/&gt;
-            &lt;/security_classes&gt;
-         &lt;/frontend&gt;
-      &lt;/frontends&gt;
-   &lt;/security&gt;
-   </pre>
 
-These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the _factory_ and _security_ sections of the [[InstallGlideinWMSFrontend#Configuring_the_Frontend][frontend configuration]] in the following way:
+       :::xml          
+       <security key_length="2048" pub_key="RSA" remove_old_cred_age="30" remove_old_cred_freq="24" reuse_oldkey_onstartup_gracetime="900">
+          <frontends>
+             <frontend identity="vofrontend_service@FACTORY_COLLECTOR_HOSTNAME" name="%ORANGE%vofrontend_sec_name%ENDCOLOR%">
+                <security_classes>
+                   <security_class name="%RED%frontend_sec_class%ENDCOLOR%" username="frontend" />
+                </security_classes>
+             </frontend>
+          </frontends>
+        </security>
 
-  :::xml
-  # This is a snippet from the Frontend configuration (for reference), not the Factory that you are configuring now!
+
+These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the **factory** and **security_ sections** of the [Configuring the GlideinWMS Frontend](#configuring-the-frontend) in the following way:
+
+
+ **This is a snippet from the Frontend configuration (for reference), not the Factory that you are configuring now!**
+ 
+For the factory section:
+        
+        
+        :::xml
         <factory query_expr='((stringListMember("VO", GLIDEIN_Supported_VOs)))'>
-  ...
-  :::xml
-   <collectors>
-        <collector DN="/DC=com/DC=DigiCert-Grid/O=Open Science Grid/OU=Services/CN=FACTORY_COLLECTOR_HOSTNAME" 
-          comment="Define factory collector globally for simplicity" factory_identity="gfactory@FACTORY_COLLECTOR_HOSTNAME" 
-          my_identity="%GREEN%vofrontend_service%ENDCOLOR%@FACTORY_COLLECTOR_HOSTNAME" 
-          node="FACTORY_COLLECTOR_HOSTNAME"/>
-   </collectors>
-  </factory>
+        ....
+           <collectors>
+              <collector DN="/DC=org/DC=doegrids/OU=Services/CN=FACTORY_COLLECTOR_HOSTNAME" 
+              comment="Define factory collector globally for simplicity"            
+              factory_identity="gfactory@FACTORY_COLLECTOR_HOSTNAME" 
+              my_identity="%GREEN%username%ENDCOLOR%@FACTORY_COLLECTOR_HOSTNAME" 
+              node="FACTORY_COLLECTOR_HOSTNAME"/>
+           </collectors>
+        </factory>
 
-  <security classad_proxy="/tmp/vo_proxy" proxy_DN="DN of vo_proxy"
-        proxy_selection_plugin="ProxyAll"
-        security_name="The security name, this is used by factory"
-        sym_key="aes_256_cbc">
-        <credentials>
-          <credential absfname="/tmp/pilot_proxy" security_class="frontend"
-          trust_domain="OSG" type="grid_proxy"/>
-        </credentials>
-   </security>
+For the security:
+
+        :::xml
+        # These lines are from the configuration of v 3.x
+        <security classad_proxy="/tmp/vo_proxy" proxy_DN="DN of vo_proxy"
+              proxy_selection_plugin="ProxyAll"
+              security_name="The security name, this is used by factory"
+              sym_key="aes_256_cbc">
+              <credentials>
+                 <credential absfname="/tmp/pilot_proxy" security_class="frontend"
+                 trust_domain="OSG" type="grid_proxy"/>
+              </credentials>
+        </security>        
+
             
-Note that the identity of the frontend must match what *condor* authenticates the DN of the frontend to.  In `/etc/condor/certs/condor_mapfile`
+Note that the identity of the frontend must match what **condor** authenticates the DN of the frontend to.  In `/etc/condor/certs/condor_mapfile`
+
 (See next section for more details), there must be an entry:
 
-  :::xml
-<pre class="file">
-GSI "%BLUE%^\/DC\=org\/DC\=doegrids\/OU\=People\/CN\=Some\ Name\ 834323%ENDCOLOR%$" %GREEN%vofrontend_service%ENDCOLOR%
-</pre>
+``` file
+GSI "^\/DC\=org\/DC\=doegrids\/OU\=Services\/CN\=Some\ Name\ 834323%ENDCOLOR%$" %GREEN%vofrontend_service%ENDCOLOR%
+```
 
 
----+++ Web server configuration
+#### Web server configuration
 
 Verify web area:
    <pre class="file">
@@ -218,7 +229,7 @@ Verify web area:
 This will determine the location of your web server.  It is advisable (but not necessarily) to change the port here and in apache by modifying the "Listen" directive in =/etc/httpd/conf/httpd.conf=.  Note that web servers are an often attacked piece of infrastruture, so you may want to go through the Apache configuration in 
 =/etc/httpd/conf/httpd.conf= and disable unneeded modules.
 
----+++ Entry configuration
+#### Entry configuration
 
 Entries are grid endpoints (Compute Elements) that can accept job requests and run pilots (which will run user jobs).
 Each needs to be configured to go to a specific gatekeeper.
@@ -260,7 +271,7 @@ For example this snippet advertises =GLIDEIN_Supported_VOs= attribute with the s
 More information on options can be found here:
 http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/factory/configuration.html
 
----++ Configuring Tarballs
+## Configuring Tarballs
 
 Each pilot will download condor binaries from the staging area.  Often, multiple binaries are needed to support various architectures and platforms. 
 Currently, you will need to provide at least one tarball for glideinWMS to use.  (Using the system binaries is currently not supported).
@@ -275,7 +286,7 @@ Once you have downloaded the tarball, configure it in =/etc/gwms-factory/glidein
 Remember also to modify the =condor_os= and =condor_arch= attributes in the entries (the configured Compute Elements) to pick the correct HTCondor binary.
 [[http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/factory/configuration.html#tarballs][Here] are more details on using multiple condor binaries. Note that is sufficient to set the =base_dir=; the reconfigure command will prepare the tarball and add it to the XML config file.
   
----++ Configuring Condor
+## Configuring Condor
 
 The condor configuration for the frontend is placed in =/etc/condor/config.d=.
    * 00_gwms_factory_general.config
@@ -325,7 +336,7 @@ After configuring condor, be sure to restart condor:
 service condor restart</pre>
 
 
----+++ Configuring Condor Privilege Separation
+### Configuring Condor Privilege Separation
 
 Lastly, verify the settings in =/etc/condor/privsep_config=.  By default,
 the values in this file should not need to be modified.  However,
@@ -354,7 +365,7 @@ The =valid-target-uids= and =valid-target-gids= should be a colon-separated list
 users and groups.  This should match the security_classes section in =/etc/gwms-factory/glideinWMS.xml=.
 
 
----+++ Using UW Madison Condor RPM
+### Using UW Madison Condor RPM
 
 The above procedure will work if you are using the OSG condor RPMS.
 If you are using the UW Madison Condor RPMS, be aware of the following changes:
@@ -365,7 +376,7 @@ If you are using the UW Madison Condor RPMS, be aware of the following changes:
 
 
 
----++ Create a Condor grid mapfile.
+## Create a Condor grid mapfile.
 
 The Condor grid mapfile (=/etc/condor/certs/condor_mapfile=) is used for authentication between the glidein running on a remote worker node, and the local collector.  Condor uses the mapfile to map certificates to pseudo-users on the local machine.  It is important that you map the DN's of each frontend you are talking to.
 
@@ -381,7 +392,7 @@ After configuring the mapfile, be sure to restart condor:
 <pre class="rootscreen">
 service condor restart</pre>
 
----++ Reconfigure and verify installation
+## Reconfigure and verify installation
 
 In order to use the factory, first you must reconfigure it.
 Each time you change the configuration you must reconfigure it using the "upgrade" or "reconfigure" option in order to 
@@ -404,7 +415,7 @@ After reconfiguring, you can start the factory:
 %UCL_PROMPT_ROOT% systemctl start gwms-factory</pre>
 
 
----+ Service Activation and Deactivation
+# Service Activation and Deactivation
 
 To *start the Factory* you must start also HTCondor and the Web server beside the Factory itself:
    * HTCondor <pre class="rootscreen">
@@ -461,21 +472,6 @@ systemctl start gwms-factory
 /usr/sbin/gwms-factory upgrade ("and your options if any")
 </pre>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 To enable the services so that they restart after a reboot:
 <pre class="rootscreen">
 %RED%# For RHEL 6, CentOS 6, and SL6%ENDCOLOR%
@@ -513,7 +509,7 @@ You can also stop these other services if you don't use them for other programs 
 %UCL_PROMPT_ROOT% systemctl stop httpd</pre>
 
 
----+ Validation of Service Operation
+# Validation of Service Operation
 
 The validation of the factroy is the submission of actual jobs.
 
@@ -548,9 +544,9 @@ You can also test the local submission of a job to a resource using the test scr
 <pre class=screen>%UCL_PROMPT% cd /var/lib/gwms-factory/work-dir; ./local_start.sh ENTRY_NAME fast -- GLIDEIN_Collector `hostname`
 </pre>
 
----+ Troubleshooting
+# Troubleshooting
 
----++ File Locations
+## File Locations
 
 |  *File Description*  |  *File Location*  | *Comment*|
 |Configuration file | /etc/gwms-factory/glideinWMS.xml | Main configuration file |
@@ -575,7 +571,7 @@ You can also change the rotation policy and choose whether compress the rotated 
    * backup_count is the number of rotated log files kept 
 Further details are in the [[http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/factory/configuration.html#process_logs][reference documentation]].
 
----++ Failed authentication errors
+## Failed authentication errors
 
 If you get messages such as these in the logs, the factory does not trust the frontend and will not submit glideins.
 
@@ -605,7 +601,7 @@ then probably the HTCondor RLM on the Compute Element is delegating the proxy an
 
 This can be fixed by setting ==DELEGATE_JOB_GSI_CREDENTIALS = FALSE== as suggested in the [[InstallComputeElement#5_1_If_you_are_using_Condor][CE install document]].
 
----++ Condor_root_switchboard errors
+## Condor_root_switchboard errors
 
 Make sure that you run =service gwms-factory upgrade= instead of the more light-weight =service gwms-factory reconfig=
 to ensure that all scripts are created correctly. 
@@ -614,64 +610,9 @@ Next verify =/etc/condor/privsep_config= to make sure the users and groups are l
 
 Lastly, verify that permissions are correct.  The parent directory of all valid-dirs must be owned by root.
 
----+ References
+References
+==========
 
    * http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd
    * http://twiki.grid.iu.edu/bin/view/Documentation/Release/GlideinWMSVOFrontendInstall
 
-
----+ Comments
-%COMMENT{type="tableappend"}%
-
-<!-- CONTENT MANAGEMENT PROJECT
-############################################################################################################
- DEAR DOCUMENT OWNER
- ===================
-
- Thank you for claiming ownership for this document! Please fill in your FirstLast name here:
-   * Local OWNER = MarcoMambelli
-
- Please define the document area, choose one of the defined areas from the next line
- DOC_AREA = (ComputeElement|General|Trash/Trash/Integration|Monitoring|Operations|Security|Storage|Trash/Tier3|User|VO)
-   * Local DOC_AREA       = General
-
- define the primary role the document serves, choose one of the defined roles from the next line
- DOC_ROLE = (Developer|Documenter|Scientist|Student|SysAdmin|VOManager)
-   * Local DOC_ROLE       = SysAdmin
-
- Please define the document type, choose one of the defined types from the next line
- DOC_TYPE = (HowTo|Installation|Knowledge|Navigation|Planning|Training|Troubleshooting)
-   * Local DOC_TYPE       = Installation
-  Please define if this document in general needs to be reviewed before release ( %YES% | %NO% )
-   * Local INCLUDE_REVIEW = %YES%
-
- Please define if this document in general needs to be tested before release ( %YES% | %NO% )
-   * Local INCLUDE_TEST   = %YES%
-
- change to %YES% once the document is ready to be reviewed and back to %NO% if that is not the case
-   * Local REVIEW_READY   = %YES%
-
- change to %YES% once the document is ready to be tested and back to %NO% if that is not the case
-   * Local TEST_READY     = %YES%
-
- change to %YES% only if the document has passed the review and the test (if applicable) and is ready for release
-   * Local RELEASE_READY  = %NO%
-
-
- DEAR DOCUMENT REVIEWER
- ======================
-
- Thank for reviewing this document! Please fill in your FirstLast name here:
-   * Local REVIEWER       = ParagMhashilkar
- Please define the review status for this document to be in progress ( %IN_PROGRESS% ), failed ( %NO% ) or passed ( %YES% )
-   * Local REVIEW_PASSED  = %IN_PROGRESS%
-
-
- DEAR DOCUMENT TESTER
- ====================
-
- Thank for testing this document! Please fill in your FirstLast name here:
-   * Local TESTER         = ParagMhashilkar
- Please define the test status for this document to be in progress ( %IN_PROGRESS% ), failed ( %NO% ) or passed ( %YES% )
-   * Local TEST_PASSED    = %IN_PROGRESS%
-############################################################################################################

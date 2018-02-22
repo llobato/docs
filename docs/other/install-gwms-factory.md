@@ -25,7 +25,7 @@ Before starting the installation process, consider the following points (consult
 #### Host and OS
 
    - A host to install the **GlideinWMS** Factory (pristine node). 
-   - OS is *SUPPORTED_OS*.  Currently most of our testing has been done on Scientific Linux 6.
+   - Currently most of our testing has been done on Scientific Linux 6 and 7.
    - Root access
 
 The Glidein WMS VO Factory has the following requirements:
@@ -35,7 +35,7 @@ The Glidein WMS VO Factory has the following requirements:
 
 #### Users
 
-The Glidein WMS Factory installation will create the following users unless they are already created.
+The Glidein WMS Factory installation will create the following users unless they are **already created**.
 
 | User | Default uid | Comment |
 | :--: | :---------: | :-----: |
@@ -50,11 +50,14 @@ Note that, to allow condor to use the condor root switchboard, if you use a diff
 
 To verify that the user *gfactory* has *gfactory* as primary group check the output of 
 
-```console
-getent passwd gfactory | cut -d: -f4 | xargs getent group
-```
+        :::console
+        root@host # getent passwd gfactory | cut -d: -f4 | xargs getent group
 
 It should be the `gfactory` group. 
+
+!!! note
+    If you get another one, you just need to modify the PrivSep Kernel configuration file `/etc/condor/privsep_config` as indicated above and establish the corresponding GID. The lists that you see in this file, specify the IDs of all users and groups that Condor jobs may use on the given execute machine. In other words, users and groups that Condor will be allowed to act on behalf of.
+
 
 #### Certificates 
 
@@ -63,9 +66,8 @@ It should be the `gfactory` group.
 | Host certificate | root | /etc/grid-security/hostcert.pem  /etc/grid-security/hostkey.pem|
 
 [Here](/security/host-certs.md) are instructions to request a host certificate.
-
  
-The host certificate/key is used for authorization,  however, authorization between the factory and the wms collector is done by file system authentication.
+The host **certificate/key** is used for authorization,  however, authorization between the factory and the wms collector is done by file system authentication.
 
 
 #### Networking
@@ -86,7 +88,7 @@ As with all OSG software installations, there are some one-time (per host) steps
 
 ### Installing HTCondor
 
-Most required software is installed from the Factory RPM installation. HTCondor is the only exception since there are [[CondorInformation][many different ways to install it]], using the RPM system or not. 
+Most required software is installed from the Factory RPM installation. HTCondor is the only exception since there are [many different ways to install it](https://research.cs.wisc.edu/htcondor/downloads/), using the RPM system or not. 
 You need to have HTCondor installed before installing the Glidein WMS Factory. If yum cannot find a HTCondor RPM, it will install the dummy =empty-condor= RPM, assuming that you installed HTCondor using a tarball distribution.
 
 If you don't have HTCondor already installed, you can install the HTCondor RPM
@@ -96,13 +98,7 @@ from the OSG repository:
 root@host # yum install condor.x86_64
 ```
 
-If you have a 32 bit host use instead:
-
-``` console
-root@host # yum install condor.i386
-```
-
-See [[CondorInformation][this HTCondor document]] for more information on the different options.
+See [this HTCondor document](htcondor.org) for more information on the different options.
 
 ### Installing HTCondor-BOSCO
 
@@ -113,9 +109,6 @@ root@host # yum install condor-bosco
 root@host # rm /etc/condor/config.d/60-campus_factory.config
 root@host # touch /etc/condor/config.d/60-campus_factory.config
 ```
-
-There is an [Advanced configuration section] (Trash/Trash/CampusGrids.BoscoInstall#8_Advanced_use) in the BOSCO documentation that can be useful to know, specially how to deal with [multi homed BOSCO resources](Trash/Trash/CampusGrids.BoscoInstall#8_2_Multi_homed_hosts)
-and the [specification of custom submit properties](Trash/Trash/CampusGrids.BoscoInstall#8_4_Custom_submit_properties).
 
 ### Install GWMS Factory
 
@@ -136,7 +129,7 @@ This command will install the glideinwms factory, condor, the OSG client, and al
 If you wish to install a different version of GlideinWMS, add the "--enablerepo" argument to the command as follows:
 
 -   `yum install --enablerepo=osg-testing glideinwms-factory`: The most recent production release, still in testing phase.  This will usually match the current tarball version on the !GlideinWMS home page.  (The osg-release production version may lag behind the tarball release by a few weeks as it is verified and packaged by OSG).  Note that this will also take the osg-testing versions of all dependencies as well.
--   `yum install --enablerepo=osg-contrib glideinwms-factory`:  The most recent development series release, ie version 3 release.  This has newer features such as cloud submission support, but is less tested.
+-   `yum install --enablerepo=osg-upcoming glideinwms-factory`:  The most recent development series release, ie version 3 release.  This has newer features such as cloud submission support, but is less tested.
 
 
 Configuration Procedure 
@@ -148,16 +141,15 @@ After installing the RPM you need to configure the components of the Glidein WMS
    1. Create a Condor grid map file
    1. Reconfigure and Start factory
 
-#### Download condor tarballs
+### Download condor tarballs
 
-You will need to download Condor tarballs for each architecture that you want to deploy pilots on.
+You will need to download Condor tarballs for each architecture that **you want to deploy pilots on**.
 At this point, glideinWMS factory does not support pulling condor binaries from your system area.
 Suggested is that you put these binaries in **/var/lib/gwms-factory/condor** but any **gfactory** accessible location should suffice.
 
-#### Configuring the Factory
+### Configuring the Factory
 
-The configuration file is =/etc/gwms-factory/glideinWMS.xml=.  The next steps will describe each line that you will need to edit for most cases, but you may want to 
-review the whole file to be sure that it is configured correctly.
+The configuration file is `/etc/gwms-factory/glideinWMS.xml`.  The next steps will describe each line that you will need to edit for most cases, but you may want to review the whole file to be sure that it is configured correctly.
 
 ##### Frontend security configuration
 
@@ -176,13 +168,13 @@ In the security section, you will need to provide each frontend that is allowed 
         </security>
 
 
-These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the **factory** and **security_ sections** of the [Configuring the GlideinWMS Frontend](#configuring-the-frontend) in the following way:
+These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the **factory** and **security** sections of the [Configuring the GlideinWMS Frontend](#configuring-the-frontend) in the following way:
 
 
- **This is a snippet from the Frontend configuration (for reference), not the Factory that you are configuring now!**
+ !!! note
+     This is a snippet from the Frontend configuration (for reference), not the Factory that you are configuring now!
  
 For the factory section:
-        
         
         :::xml
         <factory query_expr='((stringListMember("VO", GLIDEIN_Supported_VOs)))'>
@@ -220,36 +212,40 @@ GSI "^\/DC\=org\/DC\=doegrids\/OU\=Services\/CN\=Some\ Name\ 834323%ENDCOLOR%$" 
 ```
 
 
-#### Web server configuration
+#### Check Web server configuration
 
 Verify web area:
-   <pre class="file">
-       &lt;stage base_dir="/var/lib/gwms-factory/web-area/stage" use_symlink="True" web_base_url="http://HOSTNAME:PORT/factory/stage"/&gt;
-   </pre>
-This will determine the location of your web server.  It is advisable (but not necessarily) to change the port here and in apache by modifying the "Listen" directive in =/etc/httpd/conf/httpd.conf=.  Note that web servers are an often attacked piece of infrastruture, so you may want to go through the Apache configuration in 
-=/etc/httpd/conf/httpd.conf= and disable unneeded modules.
+
+``` file
+ stage base_dir="/var/lib/gwms-factory/web-area/stage" use_symlink="True" web_base_url="http://HOSTNAME:PORT/factory/stage"
+ ```
+  
+**This will determine the location of your web server**.  It is advisable (but not necessarily) to change the port here and in apache by modifying the "Listen" directive in `/etc/httpd/conf/httpd.conf`.  Note that web servers are an often attacked piece of infrastruture, so you may want to go through the Apache configuration in 
+`/etc/httpd/conf/httpd.conf` and disable unneeded modules.
 
 #### Entry configuration
 
-Entries are grid endpoints (Compute Elements) that can accept job requests and run pilots (which will run user jobs).
-Each needs to be configured to go to a specific gatekeeper.
+Entries are **grid endpoints** (Compute Elements) that can accept job requests and run pilots (which will run user jobs).
+Each needs to be configured to go to a specific **gatekeeper**.
 
 An example test entry is provided in the configuration file.  At the very least, you will need to modify the entry line:
-<pre class="file">
-%RED%# These lines are form the configuration of v 3.x%ENDCOLOR%
-       &lt;entry name="%RED%ENTRY_NAME%ENDCOLOR%" enabled="True" auth_method="grid_proxy" trust_domain="OSG" 
+
+   :::xml
+      %RED%# These lines are from the configuration of v 3.x%ENDCOLOR%
+       <entry name="%RED%ENTRY_NAME%ENDCOLOR%" enabled="True" auth_method="grid_proxy" trust_domain="OSG" 
        gatekeeper="%RED%gatekeeper.domain.tld/jobmanager-type%ENDCOLOR%" gridtype="gt2" rsl="(queue=default)(jobtype=single)"
        schedd_name="%RED%schedd_glideins2@FACTORY_HOSTNAME%ENDCOLOR%" verbosity="std" work_dir="OSG">
-%RED%# These lines are the same section form the configuration of v 2.x%ENDCOLOR%
-       &lt;entry name="%RED%ENTRY_NAME%ENDCOLOR%" enabled="True" gatekeeper="%RED%gatekeeper.domain.tld/jobmanager-type%ENDCOLOR%" 
-       gridtype="gt2" rsl="(queue=default)(jobtype=single)" schedd_name="%RED%schedd_glideins2@FACTORY_HOSTNAME%ENDCOLOR%" 
-       verbosity="std" work_dir="OSG" &gt;
-</pre>
-You will need to modify the entry name and gatekeeper.  This will determine the gatekeeper that you access.  Specific gatekeepers often require specific "rsl" attributes that determine the job queue that you are in or other attributes.  Add them in the _rsl_ attribute.  Also, be sure to distribute your entries across the various condor schedd work managers to balance load.  To see the available schedd use =condor_status -schedd -l | grep Name=.  Several schedd options are configured by default for you:  schedd_glideins2, schedd_glideins3, schedd_glideins4, schedd_glideins5, as well as the default schedd.  This can be modified in the condor configuration.  Add any specific options, such as limitations on jobs/pilots or glexec/voms requirements in the entry section below the above line.
 
-If there is no match between auth_metod and trust_domain of the entry and the type and trust domain listed in one of the [[InstallGlideinWMSFrontend#Configuring_the_Frontend][credentials of one of the frontends]] using this factory, then no job can run on that entry.
+You will need to modify the entry **name** and **gatekeeper**.  This will determine the gatekeeper that you access.  Specific gatekeepers often require specific "rsl" attributes that determine the job queue that you are in or other attributes.  Add them in the _rsl_ attribute.  
+Also, be sure to distribute your entries across the various condor schedd work managers to balance load.  To see the available schedd use `condor_status -schedd -l | grep Name`.  
+Several schedd options are configured by default for you:  *schedd_glideins2, schedd_glideins3, schedd_glideins4, schedd_glideins5*, as well as the default *schedd*.  
+This can be modified in the condor configuration.  Add any specific options, such as limitations on jobs/pilots or glexec/voms requirements in the entry section below the above line.
 
-The factory must advertise the correct Resource Name of each entry for accounting purposes. Then the factory must also advertise in the entry all the attributes that will allow to match the query expression used in the frontends connecting to this factory (e.g. ==&lt;factory query_expr='((stringListMember("%PINK%VO%ENDCOLOR%", GLIDEIN_Supported_VOs)))'>== in the [[InstallGlideinWMSFrontend#Configuring_the_Frontend][VO frontend configuration document]]). Then you must advertise correctly if the site supports !gLExec. If it does not set =GLEXEC_BIN= to =NONE=, if !gLExec is installed via OSG set it to =OSG=, otherwise set it to the path of !gLExec. 
+If there is no match between **auth_metod** and **trust_domain** of the entry and the type and trust domain listed in one of the [credentials of one of the frontends](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/) using this factory, then no job can run on that entry.
+
+The factory must advertise the correct Resource Name of each entry for accounting purposes. Then the factory must also advertise in the entry all the attributes that will allow to match the query expression used in the frontends connecting to this factory (e.g. `<factory query_expr='((stringListMember("%PINK%VO%ENDCOLOR%", GLIDEIN_Supported_VOs)))'>`) in the [VO frontend configuration document](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/). 
+Then you must advertise correctly if the site supports **gLExec**. If it does not set *GLEXEC_BIN* to *NONE*, if **gLExec** is installed via OSG set it to **OSG**, otherwise set it to the path of !gLExec. 
+
 For example this snippet advertises =GLIDEIN_Supported_VOs= attribute with the supported VO so that can be used with the query above in the VO frontend and says that the resource does not support !gLExec:
 <pre class="file">
        &lt;entry name="RESOURCE_NAME" ...

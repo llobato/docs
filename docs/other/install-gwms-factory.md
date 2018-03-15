@@ -2,9 +2,9 @@
 GlideinWMS Factory Installation
 ===================================
 
-This document describes how to install the Glidein Workflow Managment System Factory instance. 
+This document describes how to install the Glidein Workflow Managment System (GlideinWMS) Factory instance. 
 
-This document assumes expertise with HTCondor and familiarity with the glideinWMS software.  It **does not** cover anything but the simplest possible install.   Please consult the [GlideinWMS reference documentation](http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/install.html) for advanced topics, including non-root, non-RPM-based installation.
+This document assumes expertise with HTCondor and familiarity with the GlideinWMS software.  It **does not** cover anything but the simplest possible install.   Please consult the [GlideinWMS reference documentation](http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/install.html) for advanced topics, including non-root, non-RPM-based installation.
 
 ![GlideinWMS Architecture](/img/simple_diagram.png)
 
@@ -34,7 +34,7 @@ Before starting the installation process, consider the following points (consult
 The Glidein WMS VO Factory has the following requirements:
    -   **CPU**: 4-8 for a large installation (1 should suffice on a small install)
    -   **RAM**: 4-8GB on a large installation (1GB should suffice for small installs)
-   -   **Disk**:  10GB will be plenty sufficient for all the binaries, config and log files related to glideinWMS.  If you are a large site with need to keep significant history and logs, you may want to allocate 100GB+ to store long histories.
+   -   **Disk**:  10GB will be plenty sufficient for all the binaries, config and log files related to GlideinWMS.  If you are a large site with need to keep significant history and logs, you may want to allocate 100GB+ to store long histories.
 
 #### Users
 
@@ -42,14 +42,8 @@ The GlideinWMS Factory installation will create the following users unless they 
 
 | User | Default uid | Comment |
 | :--: | :---------: | :-----: |
-| condor | none | Condor user (installed via dependencies). |
+| condor | none | HTCondor user (installed via dependencies). |
 | gfactory | none | This user runs the GlideinWMS VO factory. |
-
-Note that, to allow condor to use the condor root switchboard, if you use a different user (or `gfactory` has a different group than `gfactory`), then you will have to modify:
-
-```console
-/etc/condor/privsep_config
-```
 
 To verify that the user *gfactory* has *gfactory* as primary group check the output of 
 
@@ -57,6 +51,7 @@ To verify that the user *gfactory* has *gfactory* as primary group check the out
         root@host # getent passwd gfactory | cut -d: -f4 | xargs getent group
 
 It should be the `gfactory` group. 
+
 
 !!! note
     If you get another one, you just need to modify the PrivSep Kernel configuration file `/etc/condor/privsep_config` as indicated above and establish the corresponding GID. The lists that you see in this file, specify the IDs of all users and groups that HTCondor jobs may use on the given execute machine. In other words, users and groups that HTCondor will be allowed to act on behalf of.
@@ -80,7 +75,7 @@ The host **certificate/key** is used for authorization,  however, authorization 
 It must be on the public internet, with at least one port open to the world; all worker nodes will load data from this node trough HTTP. Note that worker nodes will also need outbound access in order to access this HTTP port. 
 
 Installation Procedure
-----------------------
+--------------------------------------------
 
 As with all OSG software installations, there are some one-time (per host) steps to prepare in advance:
 
@@ -92,10 +87,9 @@ As with all OSG software installations, there are some one-time (per host) steps
 ### Installing HTCondor
 
 Most required software is installed from the Factory RPM installation. HTCondor is the only exception since there are [many different ways to install it](https://research.cs.wisc.edu/htcondor/downloads/), using the RPM system or not. 
-You need to have HTCondor installed before installing the GlideinWMS Factory. If yum cannot find a HTCondor RPM, it will install the dummy =empty-condor= RPM, assuming that you installed HTCondor using a tarball distribution.
+You need to have HTCondor installed before installing the GlideinWMS Factory. If yum cannot find a HTCondor RPM, it will install the dummy **empty-condor** RPM, assuming that you installed HTCondor using a tarball distribution.
 
-If you don't have HTCondor already installed, you can install the HTCondor RPM
-from the OSG repository:
+If you don't have HTCondor already installed, you can install the HTCondor RPM from the OSG repository:
 
 ``` console
 root@host # yum install condor.x86_64
@@ -115,10 +109,7 @@ root@host # touch /etc/condor/config.d/60-campus_factory.config
 
 ## Install GWMS Factory
 
-
 ### Download and install the Factory RPM
-
-The RPM is available in the OSG repository:
 
 Install the RPM and dependencies (be prepared for a lot of dependencies).
 
@@ -127,12 +118,18 @@ root@host # yum install glideinwms-factory
 ```   
 
 This will install the current production release verified and tested by OSG with default HTCondor configuration.
-This command will install the glideinwms factory, condor, the OSG client, and all the required dependencies.
+This command will install the Glideinwms factory, HTCondor, the OSG client, and all the required dependencies.
 
 If you wish to install a different version of GlideinWMS, add the "--enablerepo" argument to the command as follows:
 
 -   `yum install --enablerepo=osg-testing glideinwms-factory`: The most recent production release, still in testing phase.  This will usually match the current tarball version on the !GlideinWMS home page.  (The osg-release production version may lag behind the tarball release by a few weeks as it is verified and packaged by OSG).  Note that this will also take the osg-testing versions of all dependencies as well.
 -   `yum install --enablerepo=osg-upcoming glideinwms-factory`:  The most recent development series release, ie version 3 release.  This has newer features such as cloud submission support, but is less tested.
+
+### Download HTCondor tarballs
+
+You will need to download HTCondor tarballs for each architecture that **you want to deploy pilots on**.
+At this point, GlideinWMS factory does not support pulling HTCondor binaries from your system area.
+Suggested is that you put these binaries in **/var/lib/gwms-factory/condor** but any **gfactory** accessible location should suffice.
 
 
 Configuration Procedure 
@@ -144,20 +141,13 @@ After installing the RPM you need to configure the components of the GlideinWMS 
    1. Create a HTCondor grid map file
    1. Reconfigure and Start factory
 
-#### Download HTCondor tarballs
-
-You will need to download HTCondor tarballs for each architecture that **you want to deploy pilots on**.
-At this point, glideinWMS factory does not support pulling HTCondor binaries from your system area.
-Suggested is that you put these binaries in **/var/lib/gwms-factory/condor** but any **gfactory** accessible location should suffice.
-
-#### Configuring the Factory
+## Configuring the Factory
 
 The configuration file is `/etc/gwms-factory/glideinWMS.xml`.  The next steps will describe each line that you will need to edit for most cases, but you may want to review the whole file to be sure that it is configured correctly.
 
-##### Frontend security configuration
+### Frontend security configuration
 
 In the security section, you will need to provide each frontend that is allowed to communicate with the factory:
-
 
        :::xml          
        <security key_length="2048" pub_key="RSA" remove_old_cred_age="30" remove_old_cred_freq="24" reuse_oldkey_onstartup_gracetime="900">
@@ -171,7 +161,7 @@ In the security section, you will need to provide each frontend that is allowed 
         </security>
 
 
-These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the **factory** and **security** sections of the [Configuring the GlideinWMS Frontend](#configuring-the-frontend) in the following way:
+These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the **factory** and **security** sections of the [Configuring the GlideinWMS Frontend](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/#osg-factory-access) in the following way:
 
 
  !!! note
@@ -214,19 +204,7 @@ Note that the identity of the frontend must match what **condor** authenticates 
 GSI "^\/DC\=org\/DC\=doegrids\/OU\=Services\/CN\=Some\ Name\ 834323%ENDCOLOR%$" %GREEN%vofrontend_service%ENDCOLOR%
 ```
 
-
-#### Check Web server configuration
-
-Verify web area:
-
-``` file
- stage base_dir="/var/lib/gwms-factory/web-area/stage" use_symlink="True" web_base_url="http://HOSTNAME:PORT/factory/stage"
- ```
-  
-**This will determine the location of your web server**.  It is advisable (but not necessarily) to change the port here and in apache by modifying the "Listen" directive in `/etc/httpd/conf/httpd.conf`.  Note that web servers are an often attacked piece of infrastruture, so you may want to go through the Apache configuration in 
-`/etc/httpd/conf/httpd.conf` and disable unneeded modules.
-
-#### Entry configuration
+## Entry configuration
 
 Entries are **grid endpoints** (Compute Elements) that can accept job requests and run pilots (which will run user jobs).
 Each needs to be configured to go to a specific **gatekeeper**.
@@ -240,16 +218,21 @@ An example test entry is provided in the configuration file.  At the very least,
        schedd_name="%RED%schedd_glideins2@FACTORY_HOSTNAME%ENDCOLOR%" verbosity="std" work_dir="OSG">
 
 You will need to modify the entry **name** and **gatekeeper**.  This will determine the gatekeeper that you access.  Specific gatekeepers often require specific "rsl" attributes that determine the job queue that you are in or other attributes.  Add them in the _rsl_ attribute.  
+
 Also, be sure to distribute your entries across the various HTCondor schedd work managers to balance load.  To see the available schedd use `condor_status -schedd -l | grep Name`.  
+
 Several schedd options are configured by default for you:  *schedd_glideins2, schedd_glideins3, schedd_glideins4, schedd_glideins5*, as well as the default *schedd*.  
+
 This can be modified in the HTCondor configuration.  Add any specific options, such as limitations on jobs/pilots or glexec/voms requirements in the entry section below the above line.
 
-If there is no match between **auth_metod** and **trust_domain** of the entry and the type and trust domain listed in one of the [credentials of one of the frontends](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/) using this factory, then no job can run on that entry.
+If there is no match between *auth_metod* and *trust_domain* of the entry and the type and trust domain listed in one of the [credentials of one of the frontends](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/) using this factory, then no job can run on that entry.
 
 The factory must advertise the correct Resource Name of each entry for accounting purposes. Then the factory must also advertise in the entry all the attributes that will allow to match the query expression used in the frontends connecting to this factory (e.g. `<factory query_expr='((stringListMember("%PINK%VO%ENDCOLOR%", GLIDEIN_Supported_VOs)))'>`) in the [VO frontend configuration document](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/). 
+
+**NOTE: Keep an eye on this part as we're dealing with singularity.**
 Then you must advertise correctly if the site supports **gLExec**. If it does not set *GLEXEC_BIN* to *NONE*, if **gLExec** is installed via OSG set it to **OSG**, otherwise set it to the path of !gLExec. 
 
-For example this snippet advertises =GLIDEIN_Supported_VOs= attribute with the supported VO so that can be used with the query above in the VO frontend and says that the resource does not support !gLExec:
+For example this snippet advertises **GLIDEIN_Supported_VOs** attribute with the supported VO so that can be used with the query above in the VO frontend and says that the resource does not support !gLExec:
 
 
       :::xml
@@ -268,7 +251,6 @@ For example this snippet advertises =GLIDEIN_Supported_VOs= attribute with the s
 
 
 !!! note
-
     Specially if jobs are sent to OSG resources, it is very important to set the GLIDEIN_Resource_Name and to be consistent with the Resource Name reported in OIM because that name will be used for job accounting in Gratia. It should be the name of the Resource in OIM or the name of the Resource Group (specially if there are many gatekeepers submitting to the same cluster).
 
 More information on options can be found [here](http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/factory/configuration.html)
@@ -277,7 +259,7 @@ More information on options can be found [here](http://www.uscms.org/SoftwareCom
 ### Configuring Tarballs
 
 Each pilot will download HTCondor binaries from the staging area.  Often, multiple binaries are needed to support various architectures and platforms. 
-Currently, you will need to provide at least one tarball for glideinWMS to use.  (Using the system binaries is currently not supported).
+Currently, you will need to provide at least one tarball for GlideinWMS to use.  (Using the system binaries is currently not supported).
 
 Download a HTCondor tarball from [here](http://research.cs.wisc.edu/condor/downloads-v2/download.pl).  Suggested is to put the binaries in `/var/lib/gwms-factory/condor`, but any factory-accessible location will do just fine.
 
@@ -337,6 +319,32 @@ CERTIFICATE_MAPFILE= /etc/condor/certs/condor_mapfile
 </pre>
 ``` 
 
+#### Using other HTCondor RPMs, e.g. UW Madison HTCondor RPM
+
+The above procedure will work if you are using the OSG HTCondor RPMS. You can verify that you used the OSG HTCondor RPM by using `yum list condor`. The version name should include "osg", e.g. `7.8.6-3.osg.el5`.
+
+If you are using the UW Madison HTCondor RPMS, be aware of the following changes:
+
+-   This HTCondor RPM uses a file `/etc/condor/condor_config.local` to add your local machine slot to the user pool.
+-   If you want to disable this behavior (recommended), you should blank out that file or comment out the line in `/etc/condor/condor_config` for LOCAL\_CONFIG\_FILE. (Make sure that LOCAL\_CONFIG\_DIR is set to `/etc/condor/config.d`)
+-   Note that the variable LOCAL\_DIR is set differently in UW Madison and OSG RPMs. This should not cause any more problems in the Glideinwms RPMs, but please take note if you use this variable in your job submissions or other customizations.
+
+In general if you are using a non OSG RPM or if you added custom configuration files for HTCondor please check the order of the configuration files:
+
+``` console
+root@host # condor_config_val -config
+Configuration source:
+    /etc/condor/condor_config
+Local configuration sources:
+	/etc/condor/config.d/00-restart_peaceful.config
+	/etc/condor/config.d/00_gwms_factory_general.config
+	/etc/condor/config.d/01_gwms_factory_collectors.config
+	/etc/condor/config.d/02_gwms_factory_schedds.config
+	/etc/condor/config.d/03_gwms_local.config
+	/etc/condor/config.d/10-batch_gahp_blahp.config
+	/etc/condor/condor_config.local
+```
+
 #### Restarting HTCondor
 
 After configuring HTCondor, be sure to restart HTCondor:
@@ -374,34 +382,6 @@ The *valid-target-uids* and *valid-target-gids* should be a colon-separated list
 users and groups.  This should match the security_classes section in `/etc/gwms-factory/glideinWMS.xml`.
 
 
-#### Using other HTCondor RPMs, e.g. UW Madison HTCondor RPM
-
-The above procedure will work if you are using the OSG HTCondor RPMS. You can
-verify that you used the OSG HTCondor RPM by using `yum list condor`. The
-version name should include "osg", e.g. `7.8.6-3.osg.el5`.
-
-If you are using the UW Madison HTCondor RPMS, be aware of the following changes:
-
--   This HTCondor RPM uses a file `/etc/condor/condor_config.local` to add your local machine slot to the user pool.
--   If you want to disable this behavior (recommended), you should blank out that file or comment out the line in `/etc/condor/condor_config` for LOCAL\_CONFIG\_FILE. (Make sure that LOCAL\_CONFIG\_DIR is set to `/etc/condor/config.d`)
--   Note that the variable LOCAL\_DIR is set differently in UW Madison and OSG RPMs. This should not cause any more problems in the glideinwms RPMs, but please take note if you use this variable in your job submissions or other customizations.
-
-In general if you are using a non OSG RPM or if you added custom configuration
-files for HTCondor please check the order of the configuration files:
-
-``` console
-root@host # condor_config_val -config
-Configuration source:
-    /etc/condor/condor_config
-Local configuration sources:
-	/etc/condor/config.d/00-restart_peaceful.config
-	/etc/condor/config.d/00_gwms_factory_general.config
-	/etc/condor/config.d/01_gwms_factory_collectors.config
-	/etc/condor/config.d/02_gwms_factory_schedds.config
-	/etc/condor/config.d/03_gwms_local.config
-	/etc/condor/config.d/10-batch_gahp_blahp.config
-	/etc/condor/condor_config.local
-```
 
 ## Create a HTCondor grid mapfile.
 
@@ -562,6 +542,17 @@ If you have already configured the frontends, you will also have one glidefactor
         root@host cd /var/lib/gwms-factory/work-dir; ./local_start.sh ENTRY_NAME fast -- GLIDEIN_Collector `hostname`
 
 
+#### Check Web server configuration for the monitoring
+
+Verify web area and specially the location of your web server:
+
+``` file
+ stage base_dir="/var/lib/gwms-factory/web-area/stage" use_symlink="True" web_base_url="http://HOSTNAME:PORT/factory/stage"
+ ```
+  
+**This will determine the location of your web server**.  It is advisable (but not necessarily) to change the port here and in apache by modifying the "Listen" directive in `/etc/httpd/conf/httpd.conf`.  Note that web servers are an often attacked piece of infrastruture, so you may want to go through the Apache configuration in `/etc/httpd/conf/httpd.conf` and disable unneeded modules.
+
+
 Troubleshooting GlideinWMS
 --------------------------
 
@@ -596,7 +587,7 @@ You can also change the rotation policy and choose whether compress the rotated 
 
 Further details are in the [reference documentation](http://glideinwms.fnal.gov/doc.prd/frontend/configuration.html#process_logs).
 
-## Failed authentication errors
+### Failed authentication errors
 
 If you get messages such as these in the logs, the factory does not trust the frontend and will not submit glideins.
 
@@ -611,7 +602,7 @@ Client fermicloud128-fnal-gov_OSG_gWMSFrontend.main (secid: frontend_name) is no
 Skipping for security reasons.
 
 
-This error means that the identity in the security section of the factory does not match what the `/etc/condor/certs/condor_mapfil` authenticates the frontend to in HTCondor (!AuthenticatedIdentity in the classad).
+This error means that the identity in the security section of the factory does not match what the `/etc/condor/certs/condor_mapfile` authenticates the frontend to in HTCondor (!Authenticated Identity in the classad).
 
 Make sure the attributes are correctly lined up as in the Frontend security configuration section above.
 
@@ -626,10 +617,10 @@ If the glideins are running on a resource (entry) but the jobs are not running a
 
 This can be fixed by setting `DELEGATE_JOB_GSI_CREDENTIALS = FALSE` as suggested in the [CE install document](InstallComputeElement#5_1_If_you_are_using_Condor).
 
-## Condor_root_switchboard errors
+### Condor_root_switchboard errors
 
 Make sure that you run `service gwms-factory upgrade` instead of the more light-weight `service gwms-factory reconfig`
-to ensure that all scripts are created correctly. 
+to ensure that all scripts are created correctly. Just make sure that gwms-factory is stopped.
 
 Next verify `/etc/condor/privsep_config` to make sure the users and groups are listed correctly.
 

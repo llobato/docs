@@ -5,7 +5,7 @@ This document describes how to install the Glidein Workflow Managment System
 (GlideinWMS) VO Frontend for use with the OSG Glidein factory. This software is
 the minimum requirement for a VO to use GlideinWMS.
 
-This document assumes expertise with Condor and familiarity with the GlideinWMS
+This document assumes expertise with HTCondor and familiarity with the GlideinWMS
 software. It **does not** cover anything but the simplest possible install.
 Please consult the [GlideinWMS reference
 documentation](http://glideinwms.fnal.gov/doc.prd/install.html)
@@ -13,8 +13,8 @@ for advanced topics, including non-`root`, non-RPM-based installation.
 
 This document covers three components of the GlideinWMS a VO needs to install:
 
--   **User Pool Collectors**: A set of `condor_collector` processes. Pilots submitted by the factory will join to one of these collectors to form a Condor pool.
--   **User Pool Schedd**: A `condor_schedd`. Users may submit Condor vanilla universe jobs to this schedd; it will run jobs in the Condor pool formed by the **User Pool Collectors**.
+-   **User Pool Collectors**: A set of `condor_collector` processes. Pilots submitted by the factory will join to one of these collectors to form a HTCondor pool.
+-   **User Pool Schedd**: A `condor_schedd`. Users may submit HTCondor vanilla universe jobs to this schedd; it will run jobs in the HTCondor pool formed by the **User Pool Collectors**.
 -   **Glidein Frontend**: The frontend will periodically query the **User Pool Schedd** to determine the desired number of running job slots. If necessary, it will request the factory to launch additional pilots.
 
 This guide covers installation of all three components on the same host: it is
@@ -141,8 +141,8 @@ root@host # yum install glideinwms-vofrontend
 ```
 
 This will install the current production release verified and tested by OSG with
-default condor configuration. This command will install the GlideinWMS
-vofrontend, condor, the OSG client, and all the required dependencies all on one
+default HTCondor configuration. This command will install the GlideinWMS
+vofrontend, HTCondor, the OSG client, and all the required dependencies all on one
 node.
 
 If you wish to install a different version of GlideinWMS, add the "--enablerepo"
@@ -151,7 +151,7 @@ argument to the command as follows:
 -   `yum install --enablerepo=osg-testing glideinwms-vofrontend`: The most recent production release, still in testing phase. This will usually match the current tarball version on the GlideinWMS home page. (The osg-release production version may lag behind the tarball release by a few weeks as it is verified and packaged by OSG). Note that this will also take the osg-testing versions of all dependencies as well.
 -   `yum install --enablerepo=osg-upcoming glideinwms-vofrontend`: The most recent development series release, i.e. version 3.3 release. This has newer features such as cloud submission support, but is less tested.
 
-Note that these commands will install default condor configurations with all
+Note that these commands will install default HTCondor configurations with all
 services on one node.
 
 ### Installing GlideinWMS Frontend on Multiple Nodes (Advanced) 
@@ -205,8 +205,8 @@ Configuring GlideinWMS Frontend
 After installing the RPM, you need to configure the components of the GlideinWMS VO Frontend:
 
 1.  Edit Frontend configuration options
-2.  Edit Condor configuration options
-3.  Create a Condor grid map file
+2.  Edit HTCondor configuration options
+3.  Create a HTCondor grid map file
 4.  Reconfigure and Start frontend
 
 #### Configuring the Frontend
@@ -269,7 +269,7 @@ Both the `classad_proxy` and `absfname` files should be owned by `frontend` user
      - The `DN` of the %GREEN%VO Frontend Proxy%ENDCOLOR% described previously [here](#credentials-and-proxies).
      - The `node` attribute is the full hostname of the collectors (`hostname --fqdn`) and port
      - The `secondary` attribute indicates whether the element is for the primary or secondary collectors (True/False).
-     The default Condor configuration of the VO Frontend starts multiple Collector processes on the host (`/etc/condor/config.d/11_gwms_secondary_collectors.config`). The `DN` and `hostname` on the first line are the hostname and the host certificate of the VO Frontend. The `DN` and `hostname` on the second line are the same as the ones in the first one. The hostname (e.g. hostname.domain.tld) is filled automatically during the installation. The secondary collector ports can be defined as a range, e.g., 9620-9660).
+     The default HTCondor configuration of the VO Frontend starts multiple Collector processes on the host (`/etc/condor/config.d/11_gwms_secondary_collectors.config`). The `DN` and `hostname` on the first line are the hostname and the host certificate of the VO Frontend. The `DN` and `hostname` on the second line are the same as the ones in the first one. The hostname (e.g. hostname.domain.tld) is filled automatically during the installation. The secondary collector ports can be defined as a range, e.g., 9620-9660).
 
 
             :::xml
@@ -311,9 +311,9 @@ The above procedure will work if you are using the OSG HTCondor RPMS. You can
 verify that you used the OSG HTCondor RPM by using `yum list condor`. The
 version name should include "osg", e.g. `7.8.6-3.osg.el5`.
 
-If you are using the UW Madison Condor RPMS, be aware of the following changes:
+If you are using the UW Madison HTCondor RPMS, be aware of the following changes:
 
--   This Condor RPM uses a file `/etc/condor/condor_config.local` to add your local machine slot to the user pool.
+-   This HTCondor RPM uses a file `/etc/condor/condor_config.local` to add your local machine slot to the user pool.
 -   If you want to disable this behavior (recommended), you should blank out that file or comment out the line in `/etc/condor/condor_config` for LOCAL\_CONFIG\_FILE. (Make sure that LOCAL\_CONFIG\_DIR is set to `/etc/condor/config.d`)
 -   Note that the variable LOCAL\_DIR is set differently in UW Madison and OSG RPMs. This should not cause any more problems in the GlideinWMS RPMs, but please take note if you use this variable in your job submissions or other customizations.
 
@@ -356,11 +356,11 @@ If you don't see all the collectors. shared port and the two schedd, then the
 configuration must be corrected. There should be ***no*** `startd` daemons
 listed.
 
-#### Creating a Condor grid mapfile.
+#### Creating a HTCondor grid mapfile.
 
-The Condor grid mapfile (`/etc/condor/certs/condor_mapfile`) is used for
+The HTCondor grid mapfile (`/etc/condor/certs/condor_mapfile`) is used for
 authentication between the GlideinWMS pilot running on a remote worker node, and
-the local collector. Condor uses the mapfile to map certificates to pseudo-users
+the local collector. HTCondor uses the mapfile to map certificates to pseudo-users
 on the local machine. It is important that you map the DN's of:
 
 - %RED%Each schedd proxy%ENDCOLOR%: The `DN` of each schedd that the frontend talks to. Specified in the frontend.xml schedd element `DN` attribute:
@@ -401,9 +401,9 @@ GSI (.*) anonymous
 FS (.*) \1
 ```
 
-#### Restarting Condor
+#### Restarting HTCondor
 
-After configuring condor, be sure to restart condor:
+After configuring HTCondor, be sure to restart HTCondor:
 
     :::console
     root@host # service condor restart
@@ -637,13 +637,13 @@ Further, if you want to record all usage as coming from a single VO, you can con
 ...
 ```
 
-##### Non-Standard Condor Install #####
+##### Non-Standard HTCondor Install #####
 
-If Condor is installed in a non-standard location (i.e., not RPMs, or relocated RPM outside `/usr/bin`), then you need to tell the probe where to find the Condor binaries. This can be done with a script with a special attribute in `/etc/gratia/condor/ProbeConfig`, `CondorLocation`. Point it to the location of the Condor install, such that `CondorLocation/bin/condor_version` exists.
+If HTCondor is installed in a non-standard location (i.e., not RPMs, or relocated RPM outside `/usr/bin`), then you need to tell the probe where to find the HTCondor binaries. This can be done with a script with a special attribute in `/etc/gratia/condor/ProbeConfig`, `CondorLocation`. Point it to the location of the HTCondor install, such that `CondorLocation/bin/condor_version` exists.
 
 ##### New Data Directory #####
 
-If your `PER_JOB_HISTORY_DIR` condor configuration variable is different from the default value, you must update the value of `DataFolder` in `/etc/gratia/condor/ProbeConfig`. To check the value of `PER_JOB_HISTORY_DIR` run the following command:
+If your `PER_JOB_HISTORY_DIR` HTCondor configuration variable is different from the default value, you must update the value of `DataFolder` in `/etc/gratia/condor/ProbeConfig`. To check the value of `PER_JOB_HISTORY_DIR` run the following command:
 
 ``` console
 user@host $ condor_config_val PER_JOB_HISTORY_DIR
@@ -828,13 +828,13 @@ Validating GlideinWMS Frontend
 
 The complete validation of the frontend is the submission of actual jobs.
 However, there are a few things that can be checked prior to submitting user
-jobs to Condor.
+jobs to HTCondor.
 
 ## Verifying Services Are Running
 
-There are a few things that can be checked prior to submitting user jobs to Condor.
+There are a few things that can be checked prior to submitting user jobs to HTCondor.
 
-1. Verify all Condor daemons are started.
+1. Verify all HTCondor daemons are started.
 
         :::file
         user@host $ condor_config_val -verbose DAEMON_LIST
@@ -849,7 +849,7 @@ There are a few things that can be checked prior to submitting user jobs to Cond
 
        If you don't see all the **collectors and the two schedd**, then the configuration must be corrected. There should be no startd daemons listed
 
-2. Verify all VO Frontend Condor services are communicating.
+2. Verify all VO Frontend HTCondor services are communicating.
 
         :::console
         user@host $ condor_status -any
@@ -868,7 +868,7 @@ There are a few things that can be checked prior to submitting user jobs to Cond
 
 ### GlideinWMS Job submission
 
-Condor submit file `glidein-job.sub`. This is a simple job printing the hostname of the host where the job is running:
+HTCondor submit file `glidein-job.sub`. This is a simple job printing the hostname of the host where the job is running:
 
 ``` file
 #file glidein-job.sub
@@ -890,7 +890,7 @@ To submit the job:
 root@host # condor_submit glidein-job.sub
 ```
 
-Then you can control the job like a normal condor job, e.g. to check the status of the job use `condor_q`.
+Then you can control the job like a normal HTCondor job, e.g. to check the status of the job use `condor_q`.
 
 ### Monitoring Web pages
 
@@ -1013,7 +1013,7 @@ To fix the problem make sure that those attributes match as desired.
 If your jobs remain Idle
 
 -   Check the frontend log files (see above)
--   Check the condor log files (`condor_config_val LOG` will give you the correct log directory):
+-   Check the HTCondor log files (`condor_config_val LOG` will give you the correct log directory):
     -   Specifically look the CollectorXXXLog files
 
 Common causes of problems could be:
@@ -1058,7 +1058,7 @@ The Glidein WMS Frontend installation will create the following users unless the
 | User       | Default uid | Comment                                                                                                                        |
 |:-----------|:------------|:-------------------------------------------------------------------------------------------------------------------------------|
 | `apache`   | 48          | Runs httpd to provide the monitoring page (installed via dependencies).                                                        |
-| `condor`   | none        | Condor user (installed via dependencies).                                                                                      |
+| `condor`   | none        | HTCondor user (installed via dependencies).                                                                                    |
 | `frontend` | none        | This user runs the glideinWMS VO frontend. It also owns the credentials forwarded to the factory to use for the glideins.      |
 | `gratia`   | none        | Runs the Gratia probes to collect accounting data (optional see [the Gratia section below](#adding-gratia-accounting-and-a-local-monitoring-page-on-a-production-server)) |
 

@@ -8,13 +8,14 @@ This document assumes expertise with HTCondor and familiarity with the GlideinWM
 
 ![GlideinWMS Architecture](/img/simple_diagram.png)
 
-This document covers three primary components of the GlideinWMS system:
+This parts covers these primary components of the GlideinWMS system:
  
  -  **WMS Collector / Schedd**: A set of `condor_collector` and `condor_schedd` processes that allow the submission of pilots to Grid entries.  
  -  **GlideinWMS Factory**: The process submitting the pilots when needed
 
 
 !!! warning
+
     We really recommend you to use the OSG provided Factory and not to install your own. A [VO Frontend](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/) is sufficient to submit your jobs and to decide scheduling policies. And this will avoid for you the complexity to avoid directly with grid sites. If you really need you own factory be aware that it is a complex component and may require a non trivial maintenance effort.
     
 
@@ -27,7 +28,7 @@ Before starting the installation process, consider the following points (consult
 
 #### Host and OS
 
-   - A host to install the **GlideinWMS** Factory (pristine node). 
+   - A host to install the **GlideinWMS Factory** (pristine node). 
    - Currently most of our testing has been done on Scientific Linux 6 and 7.
    - Root access
 
@@ -52,7 +53,6 @@ To verify that the user *gfactory* has *gfactory* as primary group check the out
 
 It should be the `gfactory` group. 
 
-
 !!! note
     If you get another one, you just need to modify the PrivSep Kernel configuration file `/etc/condor/privsep_config` as indicated above and establish the corresponding GID. The lists that you see in this file, specify the IDs of all users and groups that HTCondor jobs may use on the given execute machine. In other words, users and groups that HTCondor will be allowed to act on behalf of.
 
@@ -65,7 +65,7 @@ It should be the `gfactory` group.
 
 [Here](/security/host-certs.md) are instructions to request a host certificate.
  
-The host **certificate/key** is used for authorization,  however, authorization between the factory and the wms collector is done by file system authentication.
+The host **certificate/key** is used for authorization,  however, authorization between the factory and the GlideinWMS collector is done by file system authentication.
 
 
 #### Networking
@@ -136,6 +136,7 @@ Configuration Procedure
 -----------------------
 
 After installing the RPM you need to configure the components of the GlideinWMS Factory:
+
    1. Edit Factory configuration options
    1. Edit HTCondor configuration options
    1. Create a HTCondor grid map file
@@ -162,7 +163,6 @@ In the security section, you will need to provide each frontend that is allowed 
 
 
 These attributes are very important to get exactly right or the frontend will not be trusted.  This should match one of the **factory** and **security** sections of the [Configuring the GlideinWMS Frontend](https://opensciencegrid.github.io/docs/other/install-gwms-frontend/#osg-factory-access) in the following way:
-
 
  !!! note
      This is a snippet from the Frontend configuration (for reference), not the Factory that you are configuring now!
@@ -196,9 +196,7 @@ For the security:
         </security>        
 
             
-Note that the identity of the frontend must match what **condor** authenticates the DN of the frontend to.  In `/etc/condor/certs/condor_mapfile`
-
-(See next section for more details), there must be an entry:
+Note that the identity of the frontend must match what condor authenticates the DN of the frontend to.  In `/etc/condor/certs/condor_mapfile`, there must be an entry with **vofrontend_service** definition (in this case):
 
 ``` file
 GSI "^\/DC\=org\/DC\=doegrids\/OU\=Services\/CN\=Some\ Name\ 834323%ENDCOLOR%$" %GREEN%vofrontend_service%ENDCOLOR%
@@ -209,7 +207,7 @@ GSI "^\/DC\=org\/DC\=doegrids\/OU\=Services\/CN\=Some\ Name\ 834323%ENDCOLOR%$" 
 Entries are **grid endpoints** (Compute Elements) that can accept job requests and run pilots (which will run user jobs).
 Each needs to be configured to go to a specific **gatekeeper**.
 
-An example test entry is provided in the configuration file.  At the very least, you will need to modify the entry line:
+An example test entry is provided in the GlideinWMS configuration file.  At the very least, you will need to modify the entry line:
 
       :::xml
       %RED%# These lines are from the configuration of v 3.x%ENDCOLOR%
@@ -253,6 +251,7 @@ For example this snippet advertises **GLIDEIN_Supported_VOs** attribute with the
 !!! note
     Specially if jobs are sent to OSG resources, it is very important to set the GLIDEIN_Resource_Name and to be consistent with the Resource Name reported in OIM because that name will be used for job accounting in Gratia. It should be the name of the Resource in OIM or the name of the Resource Group (specially if there are many gatekeepers submitting to the same cluster).
 
+**Important:**
 More information on options can be found [here](http://www.uscms.org/SoftwareComputing/Grid/WMS/glideinWMS/doc.prd/factory/configuration.html)
 
 
@@ -404,31 +403,43 @@ After configuring HTCondor, be sure to restart HTCondor:
     :::console
     root@host # service condor restart
 
-### Reconfigure and verify installation
+### Reconfiguring GlideinWMS ###
 
-!!! warning
-    In order to use the frontend, first you must reconfigure and upgrade it.Each time you change the configuration you must reconfigure it using the "upgrade" or "reconfigure" option in order to populate scripts and information correctly. 
+After changing the configuration of GlideinWMS, use the following table to find the appropriate command for your
+operating system (run as `root`):
 
-Before you start the factory service first time, you should always use the **"upgrade" option**
-        :::console
-        # %RED% For RHEL 6, CentOS 6, and SL6%ENDCOLOR%
-        root@host # service gwms-factory reconfig
-        root@host # service gwms-factory upgrade
+| If your operating system is... | Run the following command...                 |
+|:-------------------------------|:---------------------------------------------|
+| Enterprise Linux 7             | `systemctl reload gwms-factory` |
+| Enterprise Linux 6             | `service gwms-factory reconfig`  |
 
-        # %RED% For RHEL 7, CentOS 7, and SL7%ENDCOLOR%
-        root@host # /usr/sbin/gwms-factory reconfig
-        root@host # /usr/sbin/gwms-factory upgrade
 
-After this initial reconfiguring/upgrading, you can start the factory:
+### Upgrading GlideinWMS ###
 
-```console
-# %RED% For RHEL 6, CentOS 6, and SL6%ENDCOLOR%
-root@host # service gwms-factory start
-# %RED% For RHEL 7, CentOS 7, and SL7%ENDCOLOR%
-root@host # systemctl start gwms-factory
-```
+Before you start the factory service first time, you should always use the **"upgrade" option**. You must issue an upgrade command to GlideinWMS:
 
-# Service Activation and Deactivation
+- **If you are using Enterprise Linux 7**:
+
+    1. Make sure the `condor` and `gwms-factory` services are stopped.
+
+    1. Issue the upgrade command:
+
+            :::console
+            root@host # /usr/sbin/gwms-factory upgrade
+
+    1. Start the `condor` and `gwms-factory` services (see next part).
+    
+
+- **If you are using Enterprise Linux 6**:
+
+    1. Upgrade the GlideinWMS Factory:
+
+            :::console
+            root@host # service gwms-factory upgrade
+
+    1. Restart the `condor` service.
+
+## Service Activation and Deactivation
 
 To *start the Factory* you must start also **HTCondor** and the **Web server** beside the Factory itself:
 
@@ -536,11 +547,13 @@ If you have already configured the frontends, you will also have one glidefactor
 
 - You can check also the monitoring Web page: `http://YOUR_HOST_FQDN/factory/monitor/`
 
+**NOTE: [[InstallOSGClient][OSG client]] -??????**
 - You can also test the local submission of a job to a resource using the test script *local_start.sh* but you must first install [[InstallOSGClient][OSG client]] and generate a proxy. After that you can run the test (replace ENTRY_NAME with the name of one of the entries in `/etc/gwms-factory/glideinWMS.xml`):
 
         :::console
-        root@host cd /var/lib/gwms-factory/work-dir; ./local_start.sh ENTRY_NAME fast -- GLIDEIN_Collector `hostname`
-
+        root@host cd /var/lib/gwms-factory/work-dir
+	root@host ./local_start.sh ENTRY_NAME fast -- GLIDEIN_Collector `hostname`
+**NOTE:local_start.sh script??
 
 #### Check Web server configuration for the monitoring
 
@@ -553,8 +566,8 @@ Verify web area and specially the location of your web server:
 **This will determine the location of your web server**.  It is advisable (but not necessarily) to change the port here and in apache by modifying the "Listen" directive in `/etc/httpd/conf/httpd.conf`.  Note that web servers are an often attacked piece of infrastruture, so you may want to go through the Apache configuration in `/etc/httpd/conf/httpd.conf` and disable unneeded modules.
 
 
-Troubleshooting GlideinWMS
---------------------------
+Troubleshooting GlideinWMS Factory
+------------------------------------
 
 ### File Locations
 |  *File Description*  |  *File Location*  | *Comment*|
@@ -615,7 +628,7 @@ Often, this will be a pilot unable to access a web server or with an invalid pro
 
 If the glideins are running on a resource (entry) but the jobs are not running and the log files in `/var/log/gwms-factory/client/user_frontend/glidein_gfactory_instance/ENTRY_NAME` report an error like "Proxy not long lived enough (86096 s left), shortened retire time ...",  then probably the HTCondor RLM on the Compute Element is delegating the proxy and shortening its lifespan.
 
-This can be fixed by setting `DELEGATE_JOB_GSI_CREDENTIALS = FALSE` as suggested in the [CE install document](InstallComputeElement#5_1_If_you_are_using_Condor).
+This can be fixed by setting `DELEGATE_JOB_GSI_CREDENTIALS = FALSE` as suggested in the [CE install document](https://opensciencegrid.github.io/docs/#installing-and-configuring-the-compute-element).
 
 ### Condor_root_switchboard errors
 

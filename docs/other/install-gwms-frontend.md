@@ -835,7 +835,7 @@ If the startup script of the frontend is failing, check the log file for errors 
 
 If you find errors like *"Exception occurred: ... 'ExpatError: no element found: line 1, column 0\\n'\]"* and *"IOError: \[Errno 9\] Bad file descriptor"* you may have an empty status file (`/var/lib/gwms-frontend/vofrontend/monitor/group_*/frontend_status.xml`) that causes GlideinWMS Frontend not to start. The glideinFrontend crashes after a XML parsing exception visible in the log file ("Exception occurred: ... 'ExpatError: no element found: line 1, column 0\\n'\]").
 
-Remove the status file. Then start the frontend. The Fronten will be fixed in future versions to handle this automatically.
+Remove the status file. Then start the frontend. The Frontend will be fixed in future versions to handle this automatically.
 
 ### Certificates not there
 

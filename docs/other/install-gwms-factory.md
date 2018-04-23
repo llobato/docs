@@ -214,7 +214,7 @@ An example test entry is provided in the default GlideinWMS configuration file. 
        gatekeeper="%RED%gatekeeper.domain.tld/jobmanager-type%ENDCOLOR%" gridtype="gt2" rsl="(queue=default)(jobtype=single)"
        schedd_name="%RED%schedd_glideins2@FACTORY_HOSTNAME%ENDCOLOR%" verbosity="std" work_dir="OSG">
 
-You will need to modify the entry **name** and **gatekeeper**.  This will determine the gatekeeper that you access.  Specific gatekeepers often require specific "rsl" attributes that determine the job queue that you are ubmitting to, or other attributes.  Add them in the _rsl_ attribute.  
+You will need to modify the entry **name** and **gatekeeper**.  This will determine the gatekeeper that you access.  Specific gatekeepers often require specific "rsl" attributes that determine the job queue that you are submitting to, or other attributes.  Add them in the _rsl_ attribute.  
 
 Also, be sure to distribute your entries across the various HTCondor schedd work managers to balance load.  To see the available schedd use `condor_status -schedd -l | grep Name`.  
 

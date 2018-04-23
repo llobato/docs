@@ -15,7 +15,7 @@ This document covers three components of the GlideinWMS a VO needs to install:
 
 -   **User Pool Collectors**: A set of `condor_collector` processes. Pilots submitted by the factory will join to one of these collectors to form a HTCondor pool.
 -   **User Pool Schedd**: A `condor_schedd`. Users may submit HTCondor vanilla universe jobs to this schedd; it will run jobs in the HTCondor pool formed by the **User Pool Collectors**.
--   **Glidein Frontend**: The frontend will periodically query the **User Pool Schedd** to determine the desired number of running job slots. If necessary, it will request the factory to launch additional pilots.
+-   **Glidein Frontend**: The frontend will periodically query the **User Pool Schedd** to determine the desired number of running job slots. If necessary, it will request the Factory to launch additional pilots.
 
 This guide covers installation of all three components on the same host: it is
 designed for small to medium VOs (see the Hardware Requirements below). Given a
@@ -31,7 +31,7 @@ Before Starting
 Before starting the installation process, consider the following points (consulting [the Reference section below](#reference) as needed):
 
 -   **User IDs:** If they do not exist already, the installation will create the Linux users `apache` (UID 48), `condor`, `frontend`, and `gratia`
--   **Network:** The VO frontend must have reliable network connectivity, be on the public internet (no NAT), and preferably with no firewalls. Incoming TCP ports 9618 and 9620 to 9660 must be open.
+-   **Network:** The VO frontend must have reliable network connectivity, be on the public internet (no NAT), and preferably with no firewalls. Incoming TCP ports 9618 and 9620 to 9660 must be open. The Web server port, likely port 80, must be open as well.
 -   **Host choice**: The GlideinWMS VO Frontend has the following hardware requirements for a production host:
     -   **CPU**: Four cores, preferably no more than 2 years old.
     -   **RAM**: 3GB plus 2MB per running job. For example, to sustain 2000 running jobs, a host with 5GB is needed.
@@ -50,7 +50,7 @@ The VO Frontend will use two credentials in its interactions with the other
 GlideinWMS services. At this time, these will be proxy files.
 
 1. the %GREEN%VO Frontend proxy%ENDCOLOR% (used to authenticate with the other GlideinWMS services).
-2. one or more GlideinWMS %RED%pilot proxies%ENDCOLOR% (used/delegated to the factory services and submitted on the GlideinWMS pilot jobs).
+2. one or more GlideinWMS %RED%pilot proxies%ENDCOLOR% (used/delegated to the Factory services and submitted on the GlideinWMS pilot jobs).
 
 The %GREEN%VO Frontend proxy%ENDCOLOR% and the %RED% pilot proxy%ENDCOLOR% can
 be the same. By default, the VO Frontend will run as user `frontend` (UID is
@@ -63,24 +63,24 @@ The use of a service certificate is recommended. Then you create a proxy from
 the certificate as explained in the [proxy configuration section](#proxy-configuration).
 
 **You must give the Factory operations team the DN of this proxy when you
-initially setup the frontend and each time the DN changes**.
+initially setup the Frontend and each time the DN changes**.
 
 #### Pilot proxies
 
-This proxy is used by the factory to submit the GlideinWMS pilot jobs.
-Therefore, they must be authorized to access to the CEs (factory entry points)
+These proxies are used by the Factory to submit the GlideinWMS pilot jobs.
+Therefore, they must be authorized to access to the CEs (Factory entry points)
 where jobs are submitted. There is no need to notify the Factory operation about
-the DN of this proxy (neither at the initial registration nor for subsequent
-changes). This second proxy has no special requirement or controls added by the
-factory but will probably require VO attributes because of the CEs: if you are
-able to use this proxy to submit jobs to the CEs where the Factory runs
-GlideinWMS pilots for you, then the proxy is OK. You can test your proxy using
-`globusrun` or HTCondor-G
+the DN of these proxies (neither at the initial registration nor for subsequent
+changes). These additional proxies have no special requirements or controls added by the
+Factory but will probably require VO attributes because of the CEs: if you are
+able to use one of these proxies to submit jobs to the corresponding CEs where the Factory runs
+GlideinWMS pilots for you, then the proxies are OK. You can test each of your proxies using
+`globusrun` or HTCondor-G.
 
-To check the important information about a pem certificate you can use: `openssl
+To check the important information about a PEM certificate you can use: `openssl
 x509 -in /etc/grid-security/hostcert.pem -subject -issuer -dates -noout`. You
 will need that to find out information for the configuration files and the
-request to the GlideinWMS factory.
+request to the GlideinWMS Factory.
 
 ### OSG Factory access
 
@@ -107,9 +107,9 @@ In the reply from the OSG Factory managers you will receive some information nee
 2. The host of the Factory Collector: `gfactory-1.t2.ucsd.edu`
 3. The DN os the factory, e.g. `/DC=org/DC=doegrids/OU=Services/CN=gfactory-1.t2.ucsd.edu`
 4. The factory identity, e.g.: `gfactory@gfactory-1.t2.ucsd.edu`
-5. The identity on the factory you will be mapped to. Something like: `username@gfactory-1.t2.ucsd.edu`
+5. The identity on the Factory you will be mapped to. Something like: `username@gfactory-1.t2.ucsd.edu`
 6. Your security name. A unique name, usually containing your VO name: `My_SecName`
-7. A string to add in the main factory query\_expr in the frontend configuration, e.g. `stringListMember("%RED%VO%ENDCOLOR%",GLIDEIN_Supported_VOs)`. From there you get the correct name of the VO (above in this list).
+7. A string to add in the main Factory query\_expr in the Frontend configuration, e.g. `stringListMember("%RED%VO%ENDCOLOR%",GLIDEIN_Supported_VOs)`. This is used to select the entries you can use. From there you get the correct name of the VO (above in this list).
 
 Installing GlideinWMS Frontend
 ------------------------------
@@ -151,7 +151,7 @@ argument to the command as follows:
 -   `yum install --enablerepo=osg-upcoming glideinwms-vofrontend`: The most recent development series release, i.e. version 3.3 release. This has newer features such as cloud submission support, but is less tested.
 
 Note that these commands will install default HTCondor configurations with all
-services on one node.
+GlideinWMS services on one node.
 
 ### Installing GlideinWMS Frontend on Multiple Nodes (Advanced) 
 
@@ -169,8 +169,8 @@ root@host # yum install glideinwms-userschedd
 In addition, you will need to perform the following steps:
 
 - On the vofrontend and userschedd, modify `CONDOR_HOST` to point to your usercollector. This is in `/etc/condor/config.d/00_gwms_general.config`. You can also override this value by placing it in a new config file. (For instance, `/etc/condor/config.d/99_local_custom.config` to avoid rpmsave/rpmnew conflicts on upgrades).
-- In `/etc/condor/certs/condor_mapfile`, you will need to all DNs for each machine (userschedd, usercollector, vofrontend). Take great care to escape all special characters. Alternatively, you can use the `glidecondor_addDN` to add these values.
-- In the `/etc/gwms-frontend/frontend.xml` file, change the schedd locations to match the correct server. Also change the collectors tags at the bottom of the file. More details on frontend xml are in the following sections.
+- In `/etc/condor/certs/condor_mapfile`, you will need to add the DNs of each machine (userschedd, usercollector, vofrontend). Take great care to escape all special characters. Alternatively, you can use the `glidecondor_addDN` to add these values.
+- In the `/etc/gwms-frontend/frontend.xml` file, change the schedd locations to match the correct server. Also change the collectors tags at the bottom of the file. More details on frontend.xml are in the following sections.
 
 ### Upgrading the GlideinWMS Frontend
 
@@ -191,13 +191,6 @@ root@host # service gwms-frontend upgrade
 root@host # service condor restart
 ```
 
-!!! note
-    When upgrading to GlideinWMS 3.2.7 the second schedd is removed from the default configuration. For a smooth transition:
-
-    1. remove from **`/etc/gwms-frontend/frontend.xml`** the second schedd (the line containing **`schedd_jobs2@YOUR_HOST`**)
-    2. reconfigure the frontend (`service gwms-frontend reconfig`)
-    3. restart HTCondor (`service condor restart`)
-
 Configuring GlideinWMS Frontend
 --------------------------------
 
@@ -206,18 +199,18 @@ After installing the RPM, you need to configure the components of the GlideinWMS
 1.  Edit Frontend configuration options
 2.  Edit HTCondor configuration options
 3.  Create a HTCondor grid map file
-4.  Reconfigure and Start frontend
+4.  Reconfigure and Start the Frontend
 
 #### Configuring the Frontend
 
 The VO Frontend configuration file is `/etc/gwms-frontend/frontend.xml`. The next steps will describe each line that you will need to edit if you are using the OSG Factory at UCSD. The portions to edit are highlighted in red font. If you are using a different Factory more changes are necessary, please check the VO Frontend configuration reference.
 
-1. The VO you are affiliated with. This will identify those CEs that the GlideinWMS pilot will be authorized to run on using the %RED%pilot proxy%ENDCOLOR% described previously in the this [section](#credentials-and-proxies). Sometimes the whole `query_expr` is provided to you by the factory (see Factory access above):
+1. The VO you are affiliated with. This will identify those CEs that the GlideinWMS pilot will be authorized to run on using the %RED%pilot proxy%ENDCOLOR% described previously in [this section](#credentials-and-proxies). Sometimes the whole `query_expr` is provided to you by the Factory operators (see Factory access above):
 
         :::xml
         <factory query_expr='((stringListMember("VO", GLIDEIN_Supported_VOs)))'>
 
-2. Factory collector information. The `username` that you are assigned by the factory (also called the identity you will be mapped to on the factory, see above) . Note that if you are using a factory different than the production factory, you will have to change also `DN`, `factory_identity` and `node` attributes. (refer to the information provided to you by the factory operator):
+2. Factory collector information. The `username` that you are assigned by the Factory (also called the identity you will be mapped to on the factory, see above) . Note that if you are using a factory different than the production Factory, you will have to change also `DN`, `factory_identity` and `node` attributes. (refer to the information provided to you by the Factory operator):
 
         :::xml
         <collector DN="/DC=org/DC=doegrids/OU=Services/CN=gfactory-1.t2.ucsd.edu"
@@ -230,13 +223,12 @@ The VO Frontend configuration file is `/etc/gwms-frontend/frontend.xml`. The nex
 
     - The `classad_proxy` in the security entry is the location of the VO Frontend proxy described previously [here](#credentials-and-proxies).
     - The `proxy_DN` is the DN of the `classad_proxy` above.
-    - The `security_name` identifies this VO Frontend to the the Factory, It is provided by the factory operator.
-    - The `absfname` in the credential (or proxy in v 2.x) entry is the location of the GlideinWMS %RED%`pilot`%ENDCOLOR% proxy described in the requirements section [here](#credentials-and-proxies). There can be multiple pilot proxies, or even other kind of keys (e.g. if you use cloud resources). ***The type and trust_domain of the credential must match respectively auth_method and trust_domain used in the entry definition in the factory. If there is no match, between these two attributes in one of the credentials and some entry in one of the factories, then this frontend cannot trigger glideins.***
+    - The `security_name` identifies this VO Frontend to the the Factory, It is provided by the Factory operator.
+    - The `absfname` in the credential entry is the location of the GlideinWMS %RED%`pilot`%ENDCOLOR% proxy described in the requirements section [here](#credentials-and-proxies). There can be multiple pilot proxies, or even other kind of keys (e.g. if you use cloud resources). ***The type and trust_domain of the credential must match respectively auth_method and trust_domain used in the entry definition in the Factory. If there is no match, between these two attributes in one of the credentials and the corresponding ones in some entry in one of the Factories, then this Frontend cannot trigger glideins.***
 Both the `classad_proxy` and `absfname` files should be owned by `frontend` user.
 
 
             :::xml
-            # These lines are from the configuration of v 3.x
             <security classad_proxy="/tmp/vo_proxy" proxy_DN="DN of vo_proxy"
                   proxy_selection_plugin="ProxyAll"
                   security_name="The security name, this is used by factory"
@@ -251,7 +243,7 @@ Both the `classad_proxy` and `absfname` files should be owned by `frontend` user
 
     - The `DN` of the %GREEN%VO Frontend Proxy%ENDCOLOR% described previously [here](#credentials-and-proxies).
     - The `fullname` attribute is the fully qualified domain name of the host where you installed the VO Frontend (`hostname --fqdn`).
-    A secondary schedd is optional. You will need to delete the secondary schedd line if you are not using it. Multiple schedds allow the frontend to service requests from multiple submit hosts.
+    A secondary schedd is optional. You will need to delete the secondary schedd line if you are not using it. Multiple schedds allow the Frontend to service requests from multiple submit hosts.
 
 
             :::xml
@@ -281,18 +273,18 @@ Both the `classad_proxy` and `absfname` files should be owned by `frontend` user
     The Frontend configuration includes many knobs, some of which are conflicting with a RPM installation where there is only one version of the Frontend installed and it uses well known paths.     Do not change the following in the Frontend configuration (you must leave the default values coming with the RPM installation):
 
        - frontend_versioning='False' (in the first line of XML, versioning is useful to install multiple tarball versions)
-       - work base_dir must be /var/lib/gwms-frontend/vofrontend/ (other scripts like /etc/init.d/gwms-frontend count on that value)
+       - for RPM installs, work base_dir must be /var/lib/gwms-frontend/vofrontend/ (other scripts like /etc/init.d/gwms-frontend count on that value)
 
 #### Using a Different Factory
 
 The configuration above points to the OSG production Factory. If you are using a different Factory, then you have to:
 
-1.  replace `gfactory@gfactory-1.t2.ucsd.edu` and `gfactory-1.t2.ucsd.edu` with the correct values for your factory. And control also that the name used for the frontend () matches.
-2.  make sure that the factory is advertising the attributes used in the factory query expression (`query_expr`).
+1.  replace `gfactory@gfactory-1.t2.ucsd.edu` and `gfactory-1.t2.ucsd.edu` with the correct values for your Factory. And control also that the name used for the Frontend () matches.
+2.  make sure that the Factory is advertising the attributes used in the Factory query expression (`query_expr`).
 
 ### Configuring HTCondor
 
-The HTCondor configuration for the frontend is placed in `/etc/condor/config.d`.
+The HTCondor configuration for the Frontend is placed in `/etc/condor/config.d`.
 
 - 00_gwms_general.config
 - 01_gwms_collectors.config
@@ -308,7 +300,7 @@ For most installations create a new file named `/etc/condor/config.d/92_local_co
 
 The above procedure will work if you are using the OSG HTCondor RPMS. You can
 verify that you used the OSG HTCondor RPM by using `yum list condor`. The
-version name should include "osg", e.g. `7.8.6-3.osg.el5`.
+version name should include "osg", e.g. `8.6.4-3.osg.el7`.
 
 If you are using the UW Madison HTCondor RPMS, be aware of the following changes:
 
@@ -370,7 +362,7 @@ on the local machine. It is important that you map the DN's of:
           <schedd DN="/DC=org/DC=doegrids/OU=Services/CN=YOUR_HOST" fullname="schedd_jobs2@YOUR_HOST"/>
         </schedds>
 
-- %GREEN%Frontend proxy%ENDCOLOR%: The DN of the proxy that the frontend uses to communicate with the other GlideinWMS services. Specified in the frontend.xml security element `proxy_DN` attribute:
+- %GREEN%Frontend proxy%ENDCOLOR%: The DN of the proxy that the Frontend uses to communicate with the other GlideinWMS services. Specified in the frontend.xml security element `proxy_DN` attribute:
 
         :::xml
         <security classad_proxy="/tmp/vo_proxy" proxy_DN="DN of vo_proxy" ....
@@ -516,7 +508,7 @@ If you have users that submit jobs without a certificate explicitly declared in 
     ...
 ```
 
-Further, if you want to record all usage as coming from a single VO, you can configure the probe to override the 'guessed' VO. In the below example, replace the %RED%Engage<span class="twiki-macro ENDCOLOR"></span> with a registered VO that you would like to report as. If you don't have a VO that you are affiliated with, you may use Engage.
+Further, if you want to record all usage as coming from a single VO, you can configure the probe to override the 'guessed' VO. In the below example, replace the %RED%Engage%ENDCOLOR% with a registered VO that you would like to report as. If you don't have a VO that you are affiliated with, you may use Engage.
 
 ``` file
 ...
@@ -540,7 +532,7 @@ user@host $ condor_config_val PER_JOB_HISTORY_DIR
 
 ##### Different collector and other customizations #####
 
-By default the probe reports to the OSG  GRACC. To change that you must edit the configuration file, `/etc/gratia/condor/ProbeConfig`, and replace the OSG production host with your desired one:
+By default the probe reports to the OSG GRACC. To change that you must edit the configuration file, `/etc/gratia/condor/ProbeConfig`, and replace the OSG production host with your desired one:
 
 ``` file
 ...
@@ -563,11 +555,11 @@ activation/deactivation](#service-activation-and-deactivation).
 #### Allowing users to specify where their jobs run
 
 In order to allow users to specify the sites at which their jobs want to run (or
-to test a specific site), a frontend can be configured to match on
+to test a specific site), a Frontend can be configured to match on
 `DESIRED_Sites` or ignore it if not specified. Modify
 `/etc/gwms-frontend/frontend.xml` using the following instructions:
 
-1. In the frontend's global `<match>` stanza, set the `match_expr`:
+1. In the Frontend's global `<match>` stanza, set the `match_expr`:
 
         :::file
         '((job.get("DESIRED_Sites","nosite")=="nosite") or (glidein["attrs"]["GLIDEIN_Site"] in job.get("DESIRED_Sites","nosite").split(",")))'
@@ -628,10 +620,13 @@ groupwould only match jobs that have the `+is_itb=True` ClassAd.
         <job query_expr="(!isUndefined(is_itb) && is_itb)">
         
 
-6. Reconfigure the Frontend:
+6. Reconfigure the Frontend (see the section below):
 
         :::console
-        /etc/init.d/gwms-frontend reconfig
+        # on EL7 systems
+        systemctl reload gwms-frontend
+        # on EL6 systems
+        service gwms-frontend reconfig
         
         
 Using GlideinWMS
@@ -646,7 +641,7 @@ In addition to the GlideinWMS service itself, there are a number of supporting s
 | Fetch CRL  | `fetch-crl-boot` and `fetch-crl-cron`    | See [CA documentation](/common/ca#managing-fetch-crl-services) for more info |
 | Gratia     | `gratia-probes-cron`                     | Accounting software                                                          |
 | HTCondor   | `condor`                                 |                                                                              |
-| HTTPD      | `httpd`                                  | GlideinWMS monitoring                                                        |
+| HTTPD      | `httpd`                                  | GlideinWMS monitoring and staging                                            |
 | GlideinWMS | `gwms-renew-proxies` and `gwms-frontend` | [Automatic proxy renewal](#proxy-configuration) and main GlideinWMS service  |
 
 Start the services in the order listed and stop them in reverse order. As a reminder, here are common service commands (all run as `root`):
@@ -695,7 +690,7 @@ After upgrading the GlideinWMS RPM, you must issue an upgrade command to Glidein
 Validating GlideinWMS Frontend
 ------------------------------
 
-The complete validation of the frontend is the submission of actual jobs.
+The complete validation of the Frontend is the submission of actual jobs.
 However, there are a few things that can be checked prior to submitting user
 jobs to HTCondor.
 
@@ -776,12 +771,12 @@ Troubleshooting GlideinWMS
 |:------------------:|:----------------------------------------------------------------------------------------------------------------------------:|
 | Configuration file |                                                    /etc/gwms-frontend/frontend.xml                                           |
 |        Logs        |                                                        /var/log/gwms-frontend/                                               |
-|   Startup script   |                                                       /etc/init.d/gwms-frontend                                              |
+|   Startup script   |                                      /etc/init.d/gwms-frontend (on EL6) - /usr/bin/gwms-frontend (on EL7)                    |
 |    Web Directory   |                                                    /var/lib/gwms-frontend/web-area                                           |
 |      Web Base      |                                                    /var/lib/gwms-frontend/web-base                                           |
 |  Web configuration |                                                 /etc/httpd/conf.d/gwms-frontend.conf                                         |
 |  Working Directory |                                                  /var/lib/gwms-frontend/vofrontend/                                          |
-|     Lock files     | /etc/init.d/gwms-frontend/vofrontend/lock/frontend.lock /etc/init.d/gwms-frontend/vofrontend/group\_\*/lock/frontend.lock |
+|     Lock files     |      /var/lib/gwms-frontend/vofrontend/lock/frontend.lock /var/lib/gwms-frontend/vofrontend/group\_\*/lock/frontend.lock     |
 |    Status files    |                               /var/lib/gwms-frontend/vofrontend/monitor/group\_\*/frontend\_status.xml                       |
 
 
@@ -795,16 +790,16 @@ Here a short list of files to check when you change the certificates. Note that 
 |              File Description             |                               File Location                               |
 |:-----------------------------------------:|:-------------------------------------------------------------------------:|
 |             Configuration file            |                      /etc/gwms-frontend/frontend.xml                      |
-|         HTCondor certificates map         |                   /etc/condor/creds/condor\_mapfile (1)                   |
+|         HTCondor certificates map         |                   /etc/condor/certs/condor\_mapfile (1)                   |
 |        Host certificate and key (2)       | /etc/grid-security/hostcert.pem            /etc/grid-security/hostkey.pem |
 | VO Frontend proxy (from host certificate) |                            /tmp/vofe\_proxy (3)                           |
-|                Pilot proxy                |                            /tmp/vofe\_proxy (3)                           |
+|                Pilot proxy                |                            /tmp/pilot\_proxy (3)                           |
 
 1. If using HTCondor RPM installation, e.g. the one coming from OSG. If you have separate/multiple HTCondor hosts (schedds, collectors, negotiators, ..) you may have to check this file on all of them to make sure that the HTCondor authentication works correctly.
 
 2. Used to create the VO Frontend proxy if following the [instructions above](#proxy-configuration)
 
-3. If using the scripts described [above in this document](#proxy-configuration)
+3. If using the Frontend configuration and scripts described [above in this document](#proxy-configuration). These paths are the ones specified in the configuration file.
 
 Remember also that when you change DN:
 
@@ -840,7 +835,7 @@ If the startup script of the frontend is failing, check the log file for errors 
 
 If you find errors like *"Exception occurred: ... 'ExpatError: no element found: line 1, column 0\\n'\]"* and *"IOError: \[Errno 9\] Bad file descriptor"* you may have an empty status file (`/var/lib/gwms-frontend/vofrontend/monitor/group_*/frontend_status.xml`) that causes GlideinWMS Frontend not to start. The glideinFrontend crashes after a XML parsing exception visible in the log file ("Exception occurred: ... 'ExpatError: no element found: line 1, column 0\\n'\]").
 
-Remove the status file. Then start the frontend. The fronten will be fixed in future versions to handle this automatically.
+Remove the status file. Then start the frontend. The Fronten will be fixed in future versions to handle this automatically.
 
 ### Certificates not there
 
@@ -861,7 +856,7 @@ If you get a failed authentication error (e.g. "Failed to talk to factory\_pool 
     -   they must be valid for more than one hour (2/300 hours), at least the non VO part
 -   check that the clock is synchronized (see HostTimeSetup)
 
-### Frontend doesn't trust factory
+### Frontend doesn't trust Factory
 
 If your frontend complains in the debug log:
 
@@ -891,7 +886,7 @@ Common causes of problems could be:
     -   missing or expired or too short-lived proxy
     -   incorrect ownership or permission on the certificate/proxy file
     -   missing certificates
-- If the frontend http server is down in the factory there will be errors like "Failed to load file 'description.dbceCN.cfg' from `http://FRONTEND_HOST/vofrontend/stage`."
+- If the Frontend http server is down in the glidein logs in the Factory there will be errors like "Failed to load file 'description.dbceCN.cfg' from `http://FRONTEND_HOST/vofrontend/stage`."
     - check that the http server is running and you can reach the URL (`http://FRONTEND_HOST/vofrontend/stage/description.dbceCN.cfg`)
 
 Advanced Configurations
@@ -955,4 +950,4 @@ proxies.
 |GlideinWMS Frontend| tcp      | 9618, 9620 to 9660 |`YES`  |        |HTCondor Collectors for the GlideinWMS Frontend (received ClassAds from resources and jobs)|
 
 The VO frontend must have reliable network connectivity, be on the public
-internet (no NAT), and preferably with no firewalls. Incoming TCP ports 9618 to 9660 must be open.
+internet (no NAT), and preferably with no firewalls. Incoming TCP ports 9618 to 9660 must be open. 

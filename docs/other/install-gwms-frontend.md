@@ -384,13 +384,13 @@ Below is an example mapfile, by default found in
 services mentioned above.
 
 !!! note
-    The `example_of_format` entry as each DN should use this format for security purposes.
+    Previously, the `example_of_format` entry was using scape format for each DN like for example: *GSI "^\/DC\=org\/DC\=doegrids\/OU\=Services\/CN\=personal\-submit\-host2\.mydomain\.edu$" %RED<example_of_format>%ENDCOLOR%* for security purposes. This is no longer needed:
 
 ``` file
 GSI "%RED%DN of schedd proxy%ENDCOLOR%" schedd
 GSI "%GREEN%DN of frontend proxy%ENDCOLOR%" frontend
 GSI "%RED%DN of pilot proxy%ENDCOLOR%$" pilot_proxy
-GSI "^\/DC\=org\/DC\=doegrids\/OU\=Services\/CN\=personal\-submit\-host2\.mydomain\.edu$" %RED<example_of_format>%ENDCOLOR%
+GSI "^/DC=org/DC=doegrids/OU=Services/CN=personal-submit-host2.mydomain.edu$" %RED<example_of_format>%ENDCOLOR%
 GSI (.*) anonymous
 FS (.*) \1
 ```

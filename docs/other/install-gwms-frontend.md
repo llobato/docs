@@ -56,11 +56,14 @@ The %GREEN%VO Frontend proxy%ENDCOLOR% and the %RED% pilot proxy%ENDCOLOR% can
 be the same. By default, the VO Frontend will run as user `frontend` (UID is
 machine dependent) so these proxies must be owned by the user `frontend`.
 
+!!! note
+    Both proxies need to be passwordless to allow [automatic proxy renewal](#proxy-configuration).
+
 #### VO Frontend proxy
 
 
-The use of a service certificate is recommended. Then you create a proxy from
-the certificate as explained in the [proxy configuration section](#proxy-configuration).
+The use of a service certificate is recommended. Then you create a proxy from the certificate as explained in the 
+[proxy configuration section](#proxy-configuration).
 
 **You must give the Factory operations team the DN of this proxy when you
 initially setup the Frontend and each time the DN changes**.
@@ -476,7 +479,7 @@ You must report accounting information if you are running more than a few test j
         :::console
         root@host # yum install gratia-probe-glideinwms
 
-2.  Edit the ProbeConfig located in `/etc/gratia/condor/ProbeConfig`. First, edit the `SiteName` and `ProbeName` to be a unique identifier for your GlideinWMS Submit host. There can be multiple probes (with different names) per site. If you haven't already, you should register your GlideinWMS submit host in [OIM](https://oim.grid.iu.edu/oim/home). Then you can use the name you used to register the resource.
+2.  Edit the ProbeConfig located in `/etc/gratia/condor/ProbeConfig`. First, edit the `SiteName` and `ProbeName` to be a unique identifier for your GlideinWMS Submit host. There can be multiple probes (with different names) per site. If you haven't already, you should register your GlideinWMS submit host in [OIM](https://oim.opensciencegrid.org/oim/home). Then you can use the name you used to register the resource.
 
         ProbeName="condor:<hostname>"
         SiteName="HCC-GlideinWMW-Frontend"

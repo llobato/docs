@@ -7,6 +7,7 @@ One general-purpose technology for implementing a load balancer on Linux is [Lin
 
 This guide explains how to install, configure, run, test, and troubleshoot the `keepalived` service on a load balancing host for a set of [GridFTP](gridftp) servers.
 
+Before Starting
 ---------------
 
 Before starting the installation process, consider the following requirements:
@@ -169,6 +170,7 @@ The `keepalived` package is available from standard operating system repositorie
 
         :::console
         root@host # yum update
+
     This command will update **all** packages
 
 1. Install the `keepalived` package:

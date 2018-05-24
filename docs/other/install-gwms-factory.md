@@ -93,7 +93,9 @@ If you don't have HTCondor already installed, you can install the HTCondor RPM f
 ``` console
 root@host # yum install condor.x86_64
 ```
-
+!!! warning
+    HTCondor does not to support switchboard functionality anymore and it's removed from version 8.7.2. Thus, if condor version installed is >= 8.7.2, it will be needed to install glideinwms-switchboard package in addition.
+ 
 See [this HTCondor document](htcondor.org) for more information on the different options.
 
 ### Installing HTCondor-BOSCO

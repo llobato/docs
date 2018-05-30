@@ -53,6 +53,7 @@ pages:
 - Other:
   - 'Install GSI-enabled SSH': 'other/gsissh.md'
   - 'Install GlideinWMS Frontend': 'other/install-gwms-frontend.md'
+  - 'Install GlideinWMS Factory': 'other/install-gwms-factory.md'
   - 'Install a CVMFS Stratum 1': 'other/install-cvmfs-stratum1.md'
   - 'Install the Network Performance Toolkit': 'other/network-performance-toolkit.md'
   - 'Troubleshooting Gratia': 'other/troubleshooting-gratia.md'

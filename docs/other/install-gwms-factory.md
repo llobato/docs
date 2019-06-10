@@ -353,7 +353,7 @@ After configuring HTCondor, be sure to restart HTCondor:
     root@host # service condor restart
 
 
-#### Configuring HTCondor Privilege Separation
+#### Configuring HTCondor Privilege Separation (up to 3.4x versions)
 
 Lastly, verify the settings in `/etc/condor/privsep_config`.  By default,
 the values in this file should not need to be modified.  However,
@@ -383,7 +383,7 @@ users and groups.  This should match the security_classes section in `/etc/gwms-
 
 !!! note
     Please notice that from version 3.5, Factory and all pilot jobs run under a single user (gfactory) 
-    to eliminate the need of switchboard and setuid/user-switching. Thefore, there will no longer be the 
+    to eliminate the need of switchboard and setuid/user-switching. Thefore, no longer there will be the 
     need of configuring HTCondor privilage separation.
 
 ## Create a HTCondor grid mapfile.
@@ -432,7 +432,7 @@ Before you start the Factory service for the first time or after an update of th
 
 **Important:**
 
-If you are upgrading to v3.5, please notice Factory and all pilot jobs will run under a single user (gfactory) to eliminate the need of switchboard and setuid/user-switching. Thus, all glideins will run using the Factory user (no more separated users per-VO). After the RPM upgrade, you will need to::
+If you are upgrading to **v3.5**, please notice Factory and all pilot jobs will run under a single user (gfactory) to eliminate the need of switchboard and setuid/user-switching. Thus, all glideins will run using the Factory user (no more separated users per-VO). After the RPM upgrade, you will need to::
     
     1. Stop Factory and HTCondor
     2. Migrate the HTCondor status running the fact_chown script, located in factory/tools. Add the flag --backup to have backup of everything:
@@ -623,7 +623,7 @@ If the glideins are running on a resource (entry) but the jobs are not running a
 
 This can be fixed by setting `DELEGATE_JOB_GSI_CREDENTIALS = FALSE` as suggested in the [CE install document](https://opensciencegrid.github.io/docs/#installing-and-configuring-the-compute-element).
 
-### Condor_root_switchboard errors (up to 3.4x versions)
+### condor_root_switchboard errors (up to 3.4x versions)
 
 Make sure that you run `service gwms-factory upgrade` instead of the more light-weight `service gwms-factory reconfig`
 to ensure that all scripts are created correctly. Just make sure that gwms-factory is stopped.
@@ -634,7 +634,7 @@ Lastly, verify that permissions are correct.  The parent directories (all the wa
 
 !!! note
     Please notice that from version 3.5, Factory and all pilot jobs run under a single user (gfactory) 
-    to eliminate the need of switchboard and setuid/user-switching.
+    to eliminate the need of switchboard and setuid/user-switching. Therefore, these errors will not exist in v3.5.
 
 References
 ==========

@@ -47,6 +47,9 @@ user@host $ condor_ce_trace --debug --attribute='+xcount=4' --attribute='+maxMem
 
 For a list of other attributes that can be set with the `--attribute` option, consult the [job attributes](#job-attributes) section.
 
+!!! note
+    Non HTCondor batch systems may need additional configuration to support these job attributes.  See the [job router recipes](/compute-element/job-router-recipes/#setting-batch-system-directives) for details on how to support them.
+
 #### condor_ce_run
 
 `condor_ce_run` is a Python script that calls `condor_submit` on a generated submit file and tracks its progress with `condor_q`. To submit a job with `condor_ce_run`, run the following command:
@@ -201,10 +204,8 @@ Upon successful submission of your job, the Job Router takes control of your job
 
 ### Matching
 
-First, the Job Router checks if your job [matches any routes](job-router-recipes#filtering-jobs-based-on). It does this by checking the routes `Requirements` expression against the job and selecting the first match. If your job does not match any routes, the job will be put on hold and eventually removed from the CE queue without completing.
-
-!!! note
-    For versions of HTCondor < 8.7.1, the JobRouter matches jobs to routes in a round-robin fashion. This means that if a job can match to multiple routes, it can be routed by any of them! So when writing job routes, make sure that they are exclusive to each other and that your jobs can only match to a single route.
+See [this section](/compute-element/job-router-recipes#how-jobs-match-to-job-routes) for details on how jobs are matched
+to job routes.
 
 **Examples**
 
@@ -235,7 +236,7 @@ JOB_ROUTER_ENTRIES = [ \
 ]
 ```
 
-If a user could submitted their job with `+foo=bar`, the job would match `Route 1`.
+If a user submitted their job with `+foo = bar` in their submit file, the job would match `Route 1`.
 
 ### Route defaults
 

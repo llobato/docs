@@ -382,9 +382,7 @@ The *valid-target-uids* and *valid-target-gids* should be a colon-separated list
 users and groups.  This should match the security_classes section in `/etc/gwms-factory/glideinWMS.xml`.
 
 !!! note
-    Please notice that from version 3.5, Factory and all pilot jobs run under a single user (gfactory) 
-    to eliminate the need of switchboard and setuid/user-switching. Thefore, no longer there will be the 
-    need of configuring HTCondor privilage separation.
+    Please notice that from version 3.5, there is no need of configuring HTCondor privilege separation. The Factory and all pilot jobs run under a single user (gfactory) to eliminate the need of switchboard and setuid/user-switching.
 
 ## Create a HTCondor grid mapfile.
 
@@ -432,7 +430,7 @@ Before you start the Factory service for the first time or after an update of th
 
 **Important:**
 
-If you are upgrading to **v3.5**, please notice Factory and all pilot jobs will run under a single user (gfactory) to eliminate the need of switchboard and setuid/user-switching. Thus, all glideins will run using the Factory user (no more separated users per-VO). After the RPM upgrade, you will need to::
+If you are upgrading to v3.5.x from 3.4.x or earlier you need some additional steps. The Factory and all pilot jobs will run under a single user (gfactory) to eliminate the need of switchboard and setuid/user-switching, no more separated users per-VO). After the RPM upgrade, you will need to::
     
     1. Stop Factory and HTCondor
     2. Migrate the HTCondor status running the fact_chown script, located in factory/tools. Add the flag --backup to have backup of everything:
@@ -442,9 +440,9 @@ If you are upgrading to **v3.5**, please notice Factory and all pilot jobs will 
 	    
     3. Restart HTCondor and the Factory. 
  
-To **revert** to a previous version of GlideinWMS, you need to restore the *job_queue* files and change back the permissions of the log directories. Those operations need to be also performed with both HTCondor and Factory stoppped. 
+To revert to a version of GlideinWMS lower than 3.5, you need to restore the job_queue files and change back the permissions of the log directories. Those operations need to be also performed with both HTCondor and Factory stoppped. 
     
- For detailed instructions see [reference documentation]:  http://glideinwms.fnal.gov/doc.dev/factory/configuration.html#single_user
+ For detailed instructions see [reference documentation](http://glideinwms.fnal.gov/doc.dev/factory/configuration.html#single_user)
  
 ### Service Activation and Deactivation
 
@@ -633,8 +631,7 @@ Next verify `/etc/condor/privsep_config` to make sure the users and groups are l
 Lastly, verify that permissions are correct.  The parent directories (all the way to the root) of all valid-dirs in the file must be owned by root.
 
 !!! note
-    Please notice that from version 3.5, Factory and all pilot jobs run under a single user (gfactory) 
-    to eliminate the need of switchboard and setuid/user-switching. Therefore, these errors will not exist in v3.5.
+    Please notice that from version 3.5, Factory and all pilot jobs run under a single user (gfactory) to eliminate the need of switchboard and setuid/user-switching. Therefore, these errors will not exist in v3.5.
 
 References
 ==========
